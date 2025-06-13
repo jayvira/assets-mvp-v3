@@ -6,5 +6,5 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getImagePath(path: string) {
-  return `/spring${path}`
+  return `/mary-prototype${path}`
 }

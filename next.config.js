@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  basePath: '/spring',
+  basePath: '/mary-prototype',
   images: {
     unoptimized: false,
   },
