@@ -25,6 +25,8 @@ import Panel from './panels/Panel';
 import AddPanel from './panels/leftpanel/AddPanel';
 import PagesPanel from './panels/leftpanel/PagesPanel';
 import NavigatorPanel from './panels/leftpanel/NavigatorPanel';
+import AssetsPanel from './panels/leftpanel/AssetsPanel';
+import AssetDetailPanel from './panels/leftpanel/AssetDetailPanel';
 
 // Define panel types
 type PanelType = 
@@ -39,6 +41,9 @@ type PanelType =
   | 'activityLog' 
   | null;
 
+// Define AssetType for consistency (should match AssetCardProps)
+type AssetItemType = 'images' | 'videos' | 'documents';
+
 const LeftSidebar = () => {
   const { toggleNavigator } = useNavigator();
   const { mode } = useMode();
@@ -46,19 +51,32 @@ const LeftSidebar = () => {
   const basePath = BASE_PATH;
   const [activePanel, setActivePanel] = useState<PanelType>(null);
   const [prevSelectedPage, setPrevSelectedPage] = useState(selectedPage);
+  const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<{
+    id: number;
+    type: AssetItemType;
+    name: string;
+  } | null>(null);
 
   // Function to toggle panels
   const togglePanel = (panel: PanelType) => {
     if (activePanel === panel) {
       setActivePanel(null);
+      setSelectedAssetForDetail(null); // Close asset detail when main panel closes
     } else {
       setActivePanel(panel);
+      setSelectedAssetForDetail(null); // Clear asset detail when switching panels
     }
   };
 
   // Close panel function
   const closePanel = () => {
     setActivePanel(null);
+    setSelectedAssetForDetail(null);
+  };
+
+  // Handle asset selection from AssetsPanel
+  const handleAssetSelected = (asset: { id: number; type: AssetItemType; name: string } | null) => {
+    setSelectedAssetForDetail(asset);
   };
 
   // Effect to close Pages panel when a page is selected
@@ -271,7 +289,35 @@ const LeftSidebar = () => {
       <Panel title="Components" isOpen={activePanel === 'components'} onClose={closePanel} />
       <Panel title="Variables" isOpen={activePanel === 'variables'} onClose={closePanel} />
       <Panel title="Styles" isOpen={activePanel === 'styles'} onClose={closePanel} />
-      <Panel title="Assets" isOpen={activePanel === 'assets'} onClose={closePanel} />
+      {
+        activePanel === 'assets' && (
+          <Panel 
+            title="Assets" 
+            isOpen={activePanel === 'assets'} 
+            onClose={closePanel}
+            panelWidth={selectedAssetForDetail ? '648px' : '248px'}
+            hideHeader={true}
+          >
+            <div className="flex h-full w-full">
+              <div className="flex-shrink-0 w-[248px] border-r border-[var(--border-default)]">
+                <AssetsPanel 
+                  onAssetSelect={handleAssetSelected}
+                  selectedAssetId={selectedAssetForDetail?.id || null}
+                  onClose={closePanel}
+                />
+              </div>
+              {selectedAssetForDetail && (
+                <div className="flex-1">
+                  <AssetDetailPanel 
+                    asset={selectedAssetForDetail}
+                    onClose={() => handleAssetSelected(null)}
+                  />
+                </div>
+              )}
+            </div>
+          </Panel>
+        )
+      }
       <Panel title="Apps" isOpen={activePanel === 'apps'} onClose={closePanel} />
       <Panel title="Activity Log" isOpen={activePanel === 'activityLog'} onClose={closePanel} />
     </>
