@@ -13,12 +13,14 @@ import {
   ChevronSmallDownIcon,
   WebflowIcon,
   SitesStackIcon,
-  VideoTutorialsIcon
+  VideoTutorialsIcon,
+  AssetManager24Icon
 } from "@/icons";
 import { useState } from "react";
 
 const mainNavItems = [
   { name: "All sites", id: "all-sites", icon: SitesStackIcon },
+  { name: "Assets", id: "assets", icon: AssetManager24Icon },
   { name: "Tutorials", id: "tutorials", icon: VideoTutorialsIcon },
 ];
 
