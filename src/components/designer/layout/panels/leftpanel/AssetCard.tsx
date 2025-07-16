@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
+import { Modal, ModalContent } from '@/components/spring-ui/modal';
+import AssetDetailPanel from './AssetDetailPanel';
 
 interface AssetCardProps {
   id: number;
@@ -32,14 +34,27 @@ const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, 
 
   const [hovered, setHovered] = useState(false);
 
+  // Asset data for detail modal
+  const assetDetail = {
+    id,
+    type: type as 'images' | 'videos' | 'documents',
+    name,
+    fileSize: '',
+    uploadedBy: '',
+    uploadedDate: '',
+    lastModifiedDate: '',
+    title: name,
+    url,
+  };
+
   return (
     <div
-      className={`relative flex flex-col rounded-md border ${selected ? 'border-2 border-[#146EF5]' : 'border border-[var(--border-default)]'} bg-[var(--background-default)] cursor-pointer transition-colors group ${className || ''}`}
-      onClick={e => {
-        e.stopPropagation();
-        onSelect?.(!selected);
-        onClick?.();
-      }}
+      className={`relative flex flex-col rounded-md border ${
+        selected
+          ? 'border-2 border-[#146EF5]'
+          : 'border border-[var(--border-default)] hover:border-[#D1D1D1]'
+      } bg-[var(--background-default)] cursor-pointer transition-colors group ${className || ''}`}
+      onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       tabIndex={0}
@@ -53,22 +68,23 @@ const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, 
           alt={name}
           className="w-full h-full object-cover rounded-t-md"
         />
-        {/* Darkening overlay on hover */}
-        <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity rounded-t-md"></div>
         {/* Checkbox on hover or if selected */}
         {(hovered || selected) && (
           <div className="absolute top-2 left-2 z-10">
             <input
               type="checkbox"
               checked={selected}
-              readOnly
               tabIndex={-1}
-              className="w-4 h-4 accent-blue-600 rounded border-gray-300 pointer-events-none"
+              className="w-4 h-4 accent-blue-600 rounded border-gray-300 pointer-events-auto"
+              onChange={e => {
+                e.stopPropagation();
+                onSelect?.(e.target.checked);
+              }}
+              onClick={e => e.stopPropagation()}
             />
           </div>
         )}
       </div>
-      
       {/* Asset Info - Horizontal Flex Box */}
       <div className="flex items-center gap-2 p-2 border-t border-[var(--border-default)]">
         <Icon size={16} className="text-[var(--text-secondary)]" />

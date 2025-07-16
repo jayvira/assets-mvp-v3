@@ -64,6 +64,43 @@ interface AssetsPanelProps {
 const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetId, onClose }) => {
   const [activeTab, setActiveTab] = useState<AssetType>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [assets, setAssets] = useState<FullAssetItem[]>([...mockAssets]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle file uploads
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    const uploadedBy = 'Current User'; // Replace with real user if available
+    const uploadedDate = new Date().toISOString().split('T')[0];
+    const lastModifiedDate = uploadedDate;
+    const newAssets: FullAssetItem[] = Array.from(files).map((file, idx) => {
+      // Determine type by file extension
+      let type: AssetItemType = 'documents';
+      if (file.type.startsWith('image/')) type = 'images';
+      else if (file.type.startsWith('video/')) type = 'videos';
+      // Format file size
+      const fileSize = file.size > 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+        : `${(file.size / 1024).toFixed(1)} KB`;
+      // Use FileReader for preview URL (for images/videos)
+      // For now, just use a placeholder
+      return {
+        id: Date.now() + idx,
+        type,
+        icon: type === 'images' ? ImageIcon : type === 'videos' ? VideoIcon : MainDocsIcon,
+        name: file.name,
+        title: formatTitle(file.name),
+        fileSize,
+        uploadedBy,
+        uploadedDate,
+        lastModifiedDate,
+      };
+    });
+    setAssets(prev => [...newAssets, ...prev]);
+    // Reset input so same file can be uploaded again
+    event.target.value = '';
+  };
 
   // Handle clicks within the AssetsPanel
   const handlePanelClick = (event: React.MouseEvent) => {
@@ -76,7 +113,7 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
   };
 
   // Filter assets based on active tab and search query
-  const filteredAssets = mockAssets.filter(asset => {
+  const filteredAssets = assets.filter(asset => {
     const matchesType = activeTab === 'all' || asset.type === activeTab;
     const matchesSearch = searchQuery === '' || 
       asset.type.includes(searchQuery.toLowerCase()) || 
@@ -110,10 +147,18 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        {/* Hidden file input for uploads */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          multiple
+          onChange={handleFileChange}
+        />
         <Button 
           variant="outline" 
           className="w-full"
-          onClick={() => {/* Handle upload */}}
+          onClick={() => fileInputRef.current?.click()}
         >
           <UploadIcon size={16} className="mr-2" />
           Upload Asset

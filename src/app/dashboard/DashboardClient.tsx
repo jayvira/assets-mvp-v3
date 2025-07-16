@@ -1,40 +1,17 @@
 "use client";
-
-import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
-import { SiteGrid } from "@/components/dashboard/site-grid";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import AssetCard from "@/components/designer/layout/panels/leftpanel/AssetCard";
-import { ImageIcon, VideoIcon, MainDocsIcon } from "@/icons";
+import { SiteGrid } from "@/components/dashboard/site-grid";
 import { FaThLarge, FaList } from "react-icons/fa";
 import { CloseDefaultIcon } from "@/icons/CloseDefaultIcon";
 import { DeleteIcon } from "@/icons/DeleteIcon";
 import { DownloadIcon } from "@/icons/DownloadIcon";
-import AssetDetailModal from "@/components/designer/layout/panels/leftpanel/AssetDetailModal";
 
-const mockAssets = [
-  { id: 1, type: "JPG", icon: ImageIcon, name: "Eye Closeup", url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb", dateModified: "2024-06-10T10:00:00Z", tags: ["eye", "person"], fileType: "Images", status: "Approved", altText: "Close-up photograph of a human eye with detailed iris and eyelashes" },
-  { id: 2, type: "JPG", icon: ImageIcon, name: "Cat and Woman", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-06-12T09:00:00Z", tags: ["cat", "person"], fileType: "Images", status: "Needs Edit", altText: "A woman holding a cat in her arms, both looking at the camera" },
-  { id: 3, type: "PNG", icon: ImageIcon, name: "Red Tulips", url: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca", dateModified: "2024-06-09T08:00:00Z", tags: ["flower", "nature"], fileType: "Images", status: "In Progress", altText: "Bright red tulips in full bloom against a natural background" },
-  { id: 4, type: "PNG", icon: ImageIcon, name: "Cat Queen", url: "https://images.unsplash.com/photo-1518717758536-85ae29035b6d", dateModified: "2024-06-11T12:00:00Z", tags: ["cat", "crown"], fileType: "Images", status: "Needs Review", altText: "A cat wearing a small crown, looking regal and majestic" },
-  { id: 5, type: "AVIF", icon: ImageIcon, name: "Abstract Flower", url: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99", dateModified: "2024-06-08T14:00:00Z", tags: ["flower", "abstract"], fileType: "Illustrator & Vector Graphics", status: "No status", altText: "Abstract artistic representation of a flower with geometric patterns" },
-  { id: 6, type: "JPG", icon: ImageIcon, name: "Dog in Woods", url: "https://images.unsplash.com/photo-1518715308788-3005759c41c8", dateModified: "2024-06-07T16:00:00Z", tags: ["dog", "nature"], fileType: "Images", status: "Approved", altText: "A dog exploring in a forest setting with trees and natural light" },
-  { id: 7, type: "PNG", icon: ImageIcon, name: "Red Carpet 1", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-06-06T18:00:00Z", tags: ["person", "event"], fileType: "Images", status: "Approved", altText: "Celebrity walking on red carpet at a formal event" },
-  { id: 8, type: "JPG", icon: ImageIcon, name: "Red Carpet 2", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-06-05T20:00:00Z", tags: ["person", "event"], fileType: "Images", status: "Needs Edit", altText: "Fashion model posing on red carpet with photographers" },
-  { id: 9, type: "AVIF", icon: ImageIcon, name: "Red Carpet 3", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-06-04T22:00:00Z", tags: ["person", "event"], fileType: "Images", status: "Needs Review", altText: "Actor in formal attire on red carpet with media presence" },
-  { id: 10, type: "PNG", icon: ImageIcon, name: "Red Carpet 4", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-06-03T23:00:00Z", tags: ["person", "event"], fileType: "Images", status: "No status", altText: "Celebrity couple arriving at awards ceremony on red carpet" },
-  { id: 11, type: "AVIF", icon: ImageIcon, name: "Red Carpet 5", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-06-02T21:00:00Z", tags: ["person", "event"], fileType: "Images", status: "Approved", altText: "Fashion designer showcasing outfit on red carpet" },
-  { id: 12, type: "JPG", icon: ImageIcon, name: "Red Carpet 6", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-06-01T19:00:00Z", tags: ["person", "event"], fileType: "Images", status: "In Progress", altText: "Movie star posing for photographers on red carpet" },
-  { id: 13, type: "PNG", icon: ImageIcon, name: "Red Carpet 7", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-05-31T17:00:00Z", tags: ["person", "event"], fileType: "Images", status: "Needs Edit", altText: "Award winner celebrating on red carpet with trophy" },
-  { id: 14, type: "AVIF", icon: ImageIcon, name: "Red Carpet 8", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-05-30T15:00:00Z", tags: ["person", "event"], fileType: "Images", status: "Needs Review", altText: "Fashion icon making statement on red carpet" },
-  { id: 15, type: "PNG", icon: ImageIcon, name: "Red Carpet 9", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-05-29T13:00:00Z", tags: ["person", "event"], fileType: "Images", status: "No status", altText: "Celebrity interview taking place on red carpet" },
-  { id: 16, type: "JPG", icon: ImageIcon, name: "Red Carpet 10", url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308", dateModified: "2024-05-28T11:00:00Z", tags: ["person", "event"], fileType: "Images", status: "Approved", altText: "Film premiere red carpet event with crowd and cameras" },
-];
+export default function DashboardClient({ assets }) {
+  const allTags = Array.from(new Set(assets.flatMap(asset => Array.isArray(asset.tags) ? asset.tags : [])));
+  const allFileTypes = ["Images", "Videos", "Audio", "Illustrator & Vector Graphics", "PDFs", "Documents", "Rive", "Lottie"];
+  const allStatuses = ["No status", "Needs Edit", "In Progress", "Needs Review", "Approved"];
 
-const allTags = Array.from(new Set(mockAssets.flatMap(asset => asset.tags)));
-const allFileTypes = ["Images", "Videos", "Audio", "Illustrator & Vector Graphics", "PDFs", "Documents", "Rive", "Lottie"];
-const allStatuses = ["No status", "Needs Edit", "In Progress", "Needs Review", "Approved"];
-
-export default function Dashboard() {
   const [selectedSection, setSelectedSection] = useState("all-sites");
   const [viewMode, setViewMode] = useState("gallery");
   const [searchQuery, setSearchQuery] = useState("");
@@ -42,56 +19,19 @@ export default function Dashboard() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedFileType, setSelectedFileType] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("");
-  const [selectedAssetIds, setSelectedAssetIds] = useState<number[]>([]);
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
-  const [assets, setAssets] = useState([...mockAssets]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedAsset, setSelectedAsset] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleSelect = (id: number, checked: boolean) => {
+  const handleSelect = (id: string, checked: boolean) => {
     setSelectedAssetIds(prev =>
       checked ? [...prev, id] : prev.filter(selectedId => selectedId !== id)
     );
   };
 
-  const handleAssetCardClick = (asset: any) => {
-    setSelectedAsset(asset);
-    setIsModalOpen(true);
-  };
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-    const uploadedDate = new Date().toISOString();
-    const newAssets = Array.from(files).map((file, idx) => {
-      let type = "documents";
-      if (file.type.startsWith("image/")) type = "images";
-      else if (file.type.startsWith("video/")) type = "videos";
-      const fileSize = file.size > 1024 * 1024
-        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-        : `${(file.size / 1024).toFixed(1)} KB`;
-      return {
-        id: Date.now() + idx,
-        type,
-        icon: type === "images" ? ImageIcon : type === "videos" ? VideoIcon : MainDocsIcon,
-        name: file.name,
-        url: URL.createObjectURL(file),
-        dateModified: uploadedDate,
-        tags: [],
-        fileType: type.charAt(0).toUpperCase() + type.slice(1),
-        status: "No status",
-        altText: `Uploaded file: ${file.name}`,
-      };
-    });
-    setAssets(prev => [...newAssets, ...prev]);
-    event.target.value = '';
-  };
-
   // Filter and sort assets
   const filteredAssets = assets
-    .filter(asset => asset.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .filter(asset => selectedTags.length === 0 || selectedTags.every(tag => asset.tags.includes(tag)))
+    .filter(asset => asset.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(asset => selectedTags.length === 0 || selectedTags.every(tag => Array.isArray(asset.tags) && asset.tags.includes(tag)))
     .filter(asset => !selectedFileType || asset.fileType === selectedFileType)
     .filter(asset => !selectedStatus || asset.status === selectedStatus)
     .sort((a, b) => sortDesc
@@ -116,20 +56,7 @@ export default function Dashboard() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h1 className="title-text-bold text-[var(--text-primary)]">Assets</h1>
-                {/* Hidden file input for uploads */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  style={{ display: 'none' }}
-                  multiple
-                  onChange={handleFileChange}
-                />
-                <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  + Upload
-                </button>
+                <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium">+ Upload</button>
               </div>
               <div className="mb-2">
                 <input
@@ -142,7 +69,7 @@ export default function Dashboard() {
               </div>
               <div className="mb-4 flex flex-wrap gap-2 items-center">
                 <div className="relative">
-                  <button type="button" className="flex items-center gap-1 px-3 py-1 border rounded text-gray-700 bg-white hover:bg-gray-100" onClick={() => setShowTagDropdown((v: boolean) => !v)}>
+                  <button type="button" className="flex items-center gap-1 px-3 py-1 border rounded text-gray-700 bg-white hover:bg-gray-100" onClick={() => setShowTagDropdown((v) => !v)}>
                     <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M3 6a5 5 0 1 1 10 0c0 2.5-2.5 5.5-4.1 7.2a1 1 0 0 1-1.4 0C5.5 11.5 3 8.5 3 6Z" stroke="currentColor" strokeWidth="1.2"/></svg>
                     {selectedTags.length === 0 ? 'Tags' : selectedTags[0]}
                     <svg width="12" height="12" fill="none" viewBox="0 0 12 12"><path d="M3 5l3 3 3-3" stroke="currentColor" strokeWidth="1.2"/></svg>
@@ -214,22 +141,20 @@ export default function Dashboard() {
                     <AssetCard
                       key={asset.id}
                       id={asset.id}
-                      type={asset.type as string}
-                      icon={asset.icon}
+                      type={asset.fileType}
                       name={asset.name}
                       url={asset.url}
                       isSelected={false}
                       className="bg-white"
                       selected={selectedAssetIds.includes(asset.id)}
                       onSelect={checked => handleSelect(asset.id, checked)}
-                      onClick={() => handleAssetCardClick(asset)}
                     />
                   ))}
                 </div>
               ) : (
                 <div className="divide-y rounded-lg bg-white">
                   {filteredAssets.map((asset) => (
-                    <div key={asset.id} className="flex items-center gap-4 p-3 px-4 relative cursor-pointer" onClick={() => handleAssetCardClick(asset)}>
+                    <div key={asset.id} className="flex items-center gap-4 p-3 px-4 relative">
                       <input
                         type="checkbox"
                         checked={selectedAssetIds.includes(asset.id)}
@@ -240,7 +165,7 @@ export default function Dashboard() {
                       <img src={asset.url} alt={asset.name} className="w-16 h-16 object-cover rounded ml-6" />
                       <div>
                         <div className="font-medium text-gray-900">{asset.name}</div>
-                        <div className="text-xs text-gray-500">{asset.type}</div>
+                        <div className="text-xs text-gray-500">{asset.fileType}</div>
                       </div>
                     </div>
                   ))}
@@ -322,10 +247,9 @@ export default function Dashboard() {
   };
 
   return (
-    <DashboardLayout selectedSection={selectedSection} onSectionChange={setSelectedSection}>
+    <div>
+      {/* You may want to keep DashboardLayout here if you want sidebar navigation to persist */}
       {renderContent()}
-      {/* Asset Detail Modal at page level */}
-      <AssetDetailModal open={isModalOpen} onOpenChange={setIsModalOpen} asset={selectedAsset} />
-    </DashboardLayout>
+    </div>
   );
 } 

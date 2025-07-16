@@ -12,6 +12,7 @@ interface FullAssetItem {
   uploadedDate: string;
   lastModifiedDate: string;
   title: string;
+  url?: string; // Added url property
 }
 
 interface AssetDetailPanelProps {
@@ -47,9 +48,9 @@ const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, onClose }) =
       </div>
 
       {/* Asset Preview */}
-      <div className="aspect-video bg-[var(--background-secondary)] mb-4 flex items-center justify-center overflow-hidden flex-shrink-0">
+      <div className="aspect-video bg-gray-100 mb-4 flex items-center justify-center overflow-hidden flex-shrink-0">
         <img 
-          src={getPlaceholderImage()} 
+          src={asset.url || getPlaceholderImage()} 
           alt={asset.name}
           className="max-w-full max-h-full object-contain"
         />
