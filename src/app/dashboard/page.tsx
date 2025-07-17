@@ -13,6 +13,7 @@ import AssetDetailModal from "@/components/designer/layout/panels/leftpanel/Asse
 import { Button } from '@/components/spring-ui/button';
 import { AddIcon } from '@/icons/AddIcon';
 import { SiteIcon } from '@/icons/SiteIcon';
+import { TagPill } from '@/components/TagPill';
 
   // mock assets
 
@@ -377,9 +378,11 @@ export default function Dashboard() {
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [assets, setAssets] = useState([...mockAssets]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState("");
+  // Track selected tags per asset by asset id
+  const [rowSelectedTags, setRowSelectedTags] = useState<Record<number, string[]>>({});
 
   const handleSelect = (id: number, checked: boolean) => {
     setSelectedAssetIds(prev =>
@@ -452,7 +455,10 @@ export default function Dashboard() {
 
   // Filter and sort assets
   const filteredAssets = assets
-    .filter(asset => asset.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(asset =>
+      asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (asset.tags && asset.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+    )
     .filter(asset => selectedTags.length === 0 || selectedTags.every(tag => asset.tags.includes(tag)))
     .filter(asset => !selectedFileType || asset.fileType === selectedFileType)
     .filter(asset => !selectedStatus || asset.status === selectedStatus)
@@ -605,7 +611,12 @@ export default function Dashboard() {
                       key={asset.id}
                       id={asset.id}
                       type={asset.type as string}
-                      icon={asset.icon}
+                      icon={
+                        asset.icon === 'ImageIcon' ? ImageIcon :
+                        asset.icon === 'VideoIcon' ? VideoIcon :
+                        asset.icon === 'MainDocsIcon' ? MainDocsIcon :
+                        ImageIcon
+                      }
                       name={asset.name}
                       url={asset.url}
                       isSelected={false}
@@ -619,7 +630,7 @@ export default function Dashboard() {
               ) : (
                 <div className="divide-y rounded-lg bg-white">
                   {filteredAssets.map((asset) => (
-                    <div key={asset.id} className="flex items-center gap-4 p-3 px-4 relative cursor-pointer" onClick={() => handleAssetCardClick(asset)}>
+                    <div key={asset.id} className="flex items-center gap-4 p-3 px-4 relative">
                       <input
                         type="checkbox"
                         checked={selectedAssetIds.includes(asset.id)}
@@ -627,41 +638,56 @@ export default function Dashboard() {
                         className="w-4 h-4 accent-blue-600 rounded border-gray-300 shadow absolute left-0 top-1/2 -translate-y-1/2"
                         onClick={e => e.stopPropagation()}
                       />
-                      <img src={asset.url} alt={asset.name} className="w-16 h-16 object-cover rounded ml-6" />
-                      <div>
-                        <div className="font-medium text-gray-900">{asset.name}</div>
-                        <div className="text-xs text-gray-500">{asset.type}</div>
-                      </div>
-                      {asset.tags && asset.tags.length > 0 && (
-                        <div className="flex items-center gap-3 mt-3">
-                          {asset.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center rounded-full bg-gray-200 px-5 py-2 text-lg font-normal text-black"
-                            >
-                              {tag}
-                              <svg className="ml-2 w-5 h-5" viewBox="0 0 20 20" fill="none">
-                                <path d="M5 10l4 4 6-6" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            </span>
-                          ))}
+                      <div
+                        className="flex items-center gap-4 cursor-pointer flex-1"
+                        onClick={() => handleAssetCardClick(asset)}
+                      >
+                        <img src={asset.url} alt={asset.name} className="w-16 h-16 object-cover rounded ml-6" />
+                        <div>
+                          <div className="font-medium text-gray-900">{asset.name}</div>
+                          <div className="text-xs text-gray-500">{asset.type}</div>
                         </div>
-                      )}
+                      </div>
+                        {asset.tags && asset.tags.length > 0 && (
+                          <div className="flex items-center gap-3 mt-3 justify-start" style={{ width: '300px' }}>
+                            {asset.tags.map((tag) => {
+                              const selected = (rowSelectedTags[asset.id] ?? asset.tags).includes(tag);
+                              return (
+                                <TagPill
+                                  key={tag}
+                                  tag={tag}
+                                  isSelected={selected}
+                                  onClick={() => {
+                                    setRowSelectedTags(prev => {
+                                      const current = prev[asset.id] ?? asset.tags;
+                                      return {
+                                        ...prev,
+                                        [asset.id]: selected
+                                          ? current.filter(t => t !== tag)
+                                          : [...current, tag],
+                                      };
+                                    });
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
             {selectedAssetIds.length > 0 && (
-              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-4xl rounded-lg shadow-2xl bg-[#131313] flex items-center px-8 py-6 gap-6 text-white">
+              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-4xl rounded-[8px] shadow-2xl bg-[#131313] flex items-center p-4 gap-4 text-white">
                 <button
-                  className="mr-4 hover:text-gray-300 focus:outline-none flex items-center"
+                  className="hover:text-gray-300 focus:outline-none flex items-center"
                   onClick={() => setSelectedAssetIds([])}
                   aria-label="Clear selection"
                 >
                   <CloseDefaultIcon size={28} />
                 </button>
-                <span className="text-lg font-medium">{selectedAssetIds.length} item{selectedAssetIds.length > 1 ? 's' : ''} selected</span>
+                <span className="text-sm font-medium">{selectedAssetIds.length} item{selectedAssetIds.length > 1 ? 's' : ''} selected</span>
                 <div className="flex-1" />
                 <button
                   className="hover:text-white focus:outline-none flex items-center"
@@ -730,7 +756,18 @@ export default function Dashboard() {
     <DashboardLayout selectedSection={selectedSection} onSectionChange={setSelectedSection}>
       {renderContent()}
       {/* Asset Detail Modal at page level */}
-      <AssetDetailModal open={isModalOpen} onOpenChange={setIsModalOpen} asset={selectedAsset} />
+      <AssetDetailModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        asset={selectedAsset}
+        assets={filteredAssets}
+        currentIndex={selectedAsset ? filteredAssets.findIndex(a => a.id === selectedAsset.id) : undefined}
+        onAssetChange={newIndex => {
+          if (newIndex >= 0 && newIndex < filteredAssets.length) {
+            setSelectedAsset(filteredAssets[newIndex]);
+          }
+        }}
+      />
     </DashboardLayout>
   );
 } 

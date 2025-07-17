@@ -19,21 +19,43 @@ import {
   DropdownMenuItem
 } from '@/components/spring-ui/dropdown-menu';
 import { ArchiveIcon } from '@/icons/ArchiveIcon';
+import { ChevronLargeLeftIcon } from '@/icons/ChevronLargeLeftIcon';
+import { ChevronLargeRightIcon } from '@/icons/ChevronLargeRightIcon';
+import { TagPill } from '@/components/TagPill';
 
 interface AssetDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   asset: any; // You can type this more strictly if desired
+  assets?: any[]; // New: list of assets for navigation
+  currentIndex?: number; // New: index of current asset
+  onAssetChange?: (newIndex: number) => void; // New: handler for navigation
 }
 
-const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange, asset }) => {
+const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange, asset, assets, currentIndex, onAssetChange }) => {
   const [filename, setFilename] = React.useState('');
   const [editingFilename, setEditingFilename] = React.useState('');
   const [altText, setAltText] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('details');
   const [selectedTags, setSelectedTags] = React.useState<string[]>(asset?.tags || []);
   const [customTag, setCustomTag] = React.useState('');
-  
+
+  // Keyboard navigation for left/right arrows
+  React.useEffect(() => {
+    if (!open || !Array.isArray(assets) || typeof currentIndex !== 'number' || !onAssetChange) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && currentIndex > 0) {
+        onAssetChange(currentIndex - 1);
+        e.preventDefault();
+      } else if (e.key === 'ArrowRight' && currentIndex < assets.length - 1) {
+        onAssetChange(currentIndex + 1);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, assets, currentIndex, onAssetChange]);
+
   React.useEffect(() => {
     if (asset) {
       const initialName = getFilename(asset);
@@ -174,39 +196,21 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                 {/* End Custom Tag Input */}
                 <div className="flex items-center gap-2">
                   <AISparkleIcon className="w-4 h-4 text-gray-400" />
-                  {asset?.tags.map((tag: string) => {
-                    const isSelected = selectedTags.includes(tag);
-                    return (
-                      <span
-                        key={tag}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedTags(selectedTags.filter(t => t !== tag));
-                          } else {
-                            setSelectedTags([...selectedTags, tag]);
-                          }
-                        }}
-                        className={
-                          "inline-flex items-center rounded-full pl-3 pr-2 h-6 text-xs font-normal cursor-pointer select-none transition-colors " +
-                          (isSelected
-                            ? "bg-gray-200 text-black border border-transparent"
-                            : "bg-transparent text-black border border-gray-200")
+                  {asset?.tags.map((tag: string) => (
+                    <TagPill
+                      key={tag}
+                      tag={tag}
+                      isSelected={selectedTags.includes(tag)}
+                      onClick={() => {
+                        const isSelected = selectedTags.includes(tag);
+                        if (isSelected) {
+                          setSelectedTags(selectedTags.filter(t => t !== tag));
+                        } else {
+                          setSelectedTags([...selectedTags, tag]);
                         }
-                        style={{ minHeight: '24px', height: '24px' }}
-                      >
-                        {tag}
-                        {isSelected ? (
-                          <svg style={{ marginLeft: '6px' }} className="w-4 h-4" viewBox="0 0 20 20" fill="none">
-                            <path d="M5 10l4 4 6-6" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        ) : (
-                          <svg style={{ marginLeft: '6px' }} className="w-4 h-4" viewBox="0 0 20 20" fill="none">
-                            <path d="M10 5v10M5 10h10" stroke="black" strokeWidth="2" strokeLinecap="round" />
-                          </svg>
-                        )}
-                      </span>
-                    );
-                  })}
+                      }}
+                    />
+                  ))}
                 </div>
               </>
             )}
@@ -302,9 +306,9 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
             
             <div className="flex flex-1">
               {/* Left Column - Large Image */}
-              <div className="flex-1 flex items-center justify-center">
+              <div className="flex-1 flex flex-col items-center justify-center relative">
                 <div 
-                  className="asset-image-wrapper flex items-center justify-center overflow-hidden px-10 h-full w-full"
+                  className="asset-image-wrapper flex items-center justify-center overflow-hidden px-10 h-full w-full flex-1"
                   style={{
                     backgroundImage: `
                       linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
@@ -323,6 +327,35 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                     style={{ maxWidth: 'calc(100% - 80px)', maxHeight: 'calc(100vh - 200px)' }}
                   />
                 </div>
+                {/* Navigation Toolbar */}
+                {Array.isArray(assets) && typeof currentIndex === 'number' && assets.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center px-2 py-2 gap-4 z-10"
+                    style={{ background: '#00000099', borderRadius: '8px' }}>
+                    <IconButton
+                      variant="ghost"
+                      aria-label="Previous asset"
+                      onClick={() => onAssetChange && onAssetChange(currentIndex - 1)}
+                      disabled={currentIndex === 0}
+                      size="compact"
+                      style={{ color: '#fff' }}
+                    >
+                      <ChevronLargeLeftIcon size={28} style={{ color: '#fff' }} />
+                    </IconButton>
+                    <span className="title-text-bold text-white text-md min-w-[60px] text-center">
+                      {currentIndex + 1} / {assets.length}
+                    </span>
+                    <IconButton
+                      variant="ghost"
+                      aria-label="Next asset"
+                      onClick={() => onAssetChange && onAssetChange(currentIndex + 1)}
+                      disabled={currentIndex === assets.length - 1}
+                      size="compact"
+                      style={{ color: '#fff' }}
+                    >
+                      <ChevronLargeRightIcon size={28} style={{ color: '#fff' }} />
+                    </IconButton>
+                  </div>
+                )}
               </div>
               
               {/* Right Column - Metadata with Tabs */}
