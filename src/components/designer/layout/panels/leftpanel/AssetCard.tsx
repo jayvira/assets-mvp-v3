@@ -49,7 +49,7 @@ const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, 
 
   return (
     <div
-      className={`relative flex flex-col rounded-md border ${
+      className={`relative flex flex-col rounded-md border overflow-hidden ${
         selected
           ? 'border-2 border-[#146EF5]'
           : 'border border-[var(--border-default)] hover:border-[#D1D1D1]'
@@ -62,12 +62,26 @@ const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, 
       aria-checked={selected}
     >
       {/* Asset Thumbnail */}
-      <div className="aspect-square relative overflow-hidden">
-        <img 
-          src={url || getPlaceholderImage()} 
-          alt={name}
-          className="w-full h-full object-cover rounded-t-md"
-        />
+      <div 
+        className="aspect-square relative overflow-hidden"
+        style={{
+          backgroundImage: `
+            linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+            linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+            linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)
+          `,
+          backgroundSize: '12px 12px',
+          backgroundPosition: '0 0, 0 6px, 6px -6px, -6px 0px'
+        }}
+      >
+        <div className="w-full h-full flex items-center justify-center">
+          <img 
+            src={url || getPlaceholderImage()} 
+            alt={name}
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
         {/* Checkbox on hover or if selected */}
         {(hovered || selected) && (
           <div className="absolute top-2 left-2 z-10">
@@ -87,7 +101,6 @@ const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, 
       </div>
       {/* Asset Info - Horizontal Flex Box */}
       <div className="flex items-center gap-2 p-2 border-t border-[var(--border-default)]">
-        <Icon size={16} className="text-[var(--text-secondary)]" />
         <span className="$heading truncate">{name}</span>
       </div>
     </div>
