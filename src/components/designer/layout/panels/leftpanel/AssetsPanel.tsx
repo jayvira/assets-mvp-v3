@@ -14,6 +14,7 @@ import {
 import { MainDocsIcon } from '@/icons/MainDocsIcon';
 import AssetCard from './AssetCard';
 import PanelHeader from '../PanelHeader';
+import { ASSETS } from '@/config/assets';
 // import AssetDetailModal from './AssetDetailModal'; // Removed as it's replaced by a side panel
 
 // Define asset types
@@ -42,17 +43,18 @@ type FullAssetItem = {
   lastModifiedDate: string;
 };
 
-// Mock assets data - replace with real data later
-const mockAssets: FullAssetItem[] = [
-  { id: 1, type: 'images', icon: ImageIcon, name: 'hero-image.jpg', title: formatTitle('hero-image.jpg'), fileSize: '1.2 MB', uploadedBy: 'Alice Smith', uploadedDate: '2023-01-15', lastModifiedDate: '2023-01-20' },
-  { id: 2, type: 'images', icon: ImageIcon, name: 'profile-pic.png', title: formatTitle('profile-pic.png'), fileSize: '0.5 MB', uploadedBy: 'Bob Johnson', uploadedDate: '2023-02-01', lastModifiedDate: '2023-02-01' },
-  { id: 3, type: 'videos', icon: VideoIcon, name: 'product-demo.mp4', title: formatTitle('product-demo.mp4'), fileSize: '25.8 MB', uploadedBy: 'Charlie Brown', uploadedDate: '2023-03-10', lastModifiedDate: '2023-03-15' },
-  { id: 4, type: 'videos', icon: VideoIcon, name: 'tutorial.mp4', title: formatTitle('tutorial.mp4'), fileSize: '18.1 MB', uploadedBy: 'Diana Prince', uploadedDate: '2023-04-05', lastModifiedDate: '2023-04-05' },
-  { id: 5, type: 'documents', icon: MainDocsIcon, name: 'specs.pdf', title: formatTitle('specs.pdf'), fileSize: '3.4 MB', uploadedBy: 'Eve Adams', uploadedDate: '2023-05-20', lastModifiedDate: '2023-05-22' },
-  { id: 6, type: 'documents', icon: MainDocsIcon, name: 'guide.docx', title: formatTitle('guide.docx'), fileSize: '0.8 MB', uploadedBy: 'Frank White', uploadedDate: '2023-06-01', lastModifiedDate: '2023-06-01' },
-  { id: 7, type: 'images', icon: ImageIcon, name: 'banner.png', title: formatTitle('banner.png'), fileSize: '0.9 MB', uploadedBy: 'Grace Lee', uploadedDate: '2023-07-11', lastModifiedDate: '2023-07-12' },
-  { id: 8, type: 'videos', icon: VideoIcon, name: 'intro.mp4', title: formatTitle('intro.mp4'), fileSize: '10.0 MB', uploadedBy: 'Harry Kim', uploadedDate: '2023-08-01', lastModifiedDate: '2023-08-01' },
-];
+// Use centralized assets data
+const mockAssets: FullAssetItem[] = ASSETS.map(asset => ({
+  id: asset.id,
+  type: asset.fileType === 'Images' ? 'images' : asset.fileType === 'Videos' ? 'videos' : 'documents',
+  icon: asset.icon === 'ImageIcon' ? ImageIcon : asset.icon === 'VideoIcon' ? VideoIcon : MainDocsIcon,
+  name: asset.name,
+  title: formatTitle(asset.name),
+  fileSize: asset.fileSize,
+  uploadedBy: asset.uploadedBy,
+  uploadedDate: asset.uploadedDate.split('T')[0],
+  lastModifiedDate: asset.dateModified.split('T')[0],
+}));
 
 // Update props interface for AssetsPanel
 interface AssetsPanelProps {

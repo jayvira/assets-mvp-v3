@@ -24,98 +24,13 @@ import {
 } from "@/icons";
 import { useState } from "react";
 import { getImagePath } from "@/lib/utils";
+import { SITES } from "@/config/sites";
 
-// Mock data for demonstration
-const mockSites = [
-  {
-    id: "1",
-    name: "Design Resources Hub",
-    description: "A curated resource list to kickstart your design education",
-    thumbnail: getImagePath("/images/site1.png"),
-    status: "live" as const,
-    lastModified: "2 hours ago",
-    domain: "resources.example.com",
-    plan: "E-commerce Site",
-    isPublished: true,
-  },
-  {
-    id: "2",
-    name: "PlayReplay Tennis",
-    description: "No more doubts - Professional tennis coaching platform",
-    thumbnail: getImagePath("/images/site2.png"),
-    status: "draft" as const,
-    lastModified: "1 day ago",
-    domain: "tennis.example.com",
-    plan: "Basic Site",
-    isPublished: false,
-  },
-  {
-    id: "3",
-    name: "Blackbird Agency",
-    description: "Enter the world of Blackbird - Creative digital agency",
-    thumbnail: getImagePath("/images/site3.png"),
-    status: "live" as const,
-    lastModified: "3 days ago",
-    domain: "blackbird.example.com",
-    plan: "Business Site",
-    isPublished: true,
-  },
-  {
-    id: "4",
-    name: "Egglife Wraps",
-    description: "The Perfect Wrap for eating better - Healthy food products",
-    thumbnail: getImagePath("/images/site4.png"),
-    status: "live" as const,
-    lastModified: "1 week ago",
-    domain: "egglife.example.com",
-    plan: "CMS Site",
-    isPublished: true,
-  },
-  {
-    id: "5",
-    name: "Radiant Search",
-    description: "We are Radiant, the leading search to search firm globally",
-    thumbnail: getImagePath("/images/site5.png"),
-    status: "draft" as const,
-    lastModified: "2 weeks ago",
-    domain: "radiant.example.com",
-    plan: "Starter Site",
-    isPublished: false,
-  },
-  {
-    id: "6",
-    name: "Pepperclip Studio",
-    description: "Creative studio & digital agency based in Paris",
-    thumbnail: getImagePath("/images/site6.png"),
-    status: "live" as const,
-    lastModified: "1 month ago",
-    domain: "pepperclip.example.com",
-    plan: "Business Site",
-    isPublished: true,
-  },
-  {
-    id: "7",
-    name: "OpenPhone Teams",
-    description: "The all-in-one phone system for teams",
-    thumbnail: getImagePath("/images/site7.png"),
-    status: "live" as const,
-    lastModified: "2 days ago",
-    domain: "openphone.example.com",
-    plan: "Business Site",
-    isPublished: true,
-  },
-  {
-    id: "8",
-    name: "Atomus Focus",
-    description: "Get your focus back on the experience - Design tool platform",
-    thumbnail: getImagePath("/images/site8.png"),
-    status: "draft" as const,
-    lastModified: "5 days ago",
-    domain: "atomus.example.com",
-    plan: "Pro Site",
-    isPublished: false,
-  },
-];
+// Use centralized sites data
+const mockSites = SITES.map(site => ({
+  ...site,
+  thumbnail: getImagePath(site.thumbnail || "")
+}));
 
 export function SiteGrid() {
   const [viewMode, setViewMode] = useState("grid");
@@ -124,11 +39,6 @@ export function SiteGrid() {
   return (
     <div 
       className="w-full mx-auto"
-      style={{ 
-        maxWidth: '1040px',
-        minWidth: '280px',
-        padding: '16px'
-      }}
     >
       <div className="space-y-6">
         {/* Header */}

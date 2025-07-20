@@ -11,17 +11,14 @@ import {
   AppsIcon, 
   TemplatesIcon,
   ChevronSmallDownIcon,
-  WebflowIcon,
   SitesStackIcon,
   VideoTutorialsIcon,
-  AssetManager24Icon
 } from "@/icons";
 import { useState } from "react";
 
 const mainNavItems = [
   { name: "All sites", id: "all-sites", icon: SitesStackIcon },
   { name: "Team", id: "team", icon: UsersIcon },
-  { name: "Assets", id: "assets", icon: AssetManager24Icon },
   { name: "Tutorials", id: "tutorials", icon: VideoTutorialsIcon },
 ];
 
@@ -40,18 +37,18 @@ const workspaces = [
   { name: "Personal", current: false },
 ];
 
-interface DashboardSidebarProps {
+interface SitesSidebarProps {
   selectedSection?: string;
   onSectionChange?: (section: string) => void;
 }
 
-export function DashboardSidebar({ selectedSection = "all-sites", onSectionChange }: DashboardSidebarProps) {
+export function SitesSidebar({ selectedSection = "all-sites", onSectionChange }: SitesSidebarProps) {
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const currentWorkspace = workspaces.find(w => w.current) || workspaces[0];
 
   return (
     <aside 
-      className="overflow-y-auto border-none bg-[var(--bg-secondary)]"
+      className="h-screen overflow-y-auto border-none bg-[var(--bg-secondary)]"
       style={{ width: '240px' }}
     >
       <div className="p-4 space-y-4">
@@ -81,7 +78,7 @@ export function DashboardSidebar({ selectedSection = "all-sites", onSectionChang
                 {workspaces.map((workspace) => (
                   <button
                     key={workspace.name}
-                                          className="w-full flex items-center space-x-3 px-3 py-2 text-sm hover:bg-[var(--bg-raised)] text-left"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm hover:bg-[var(--bg-raised)] text-left"
                   >
                     <Avatar 
                       size="lg" 
@@ -98,7 +95,7 @@ export function DashboardSidebar({ selectedSection = "all-sites", onSectionChang
         </div>
 
         {/* Main Navigation */}
-        <div>
+        <div className="mt-10">
           {mainNavItems.map((item) => (
             <Row
               key={item.name}
@@ -112,27 +109,7 @@ export function DashboardSidebar({ selectedSection = "all-sites", onSectionChang
           ))}
         </div>
 
-        {/* Settings Section */}
-        <div className="pt-4 space-y-1">
-          <div className="mb-3">
-            <h3 className="px-3 body-text-bold text-[var(--text-secondary)]">
-              Settings
-            </h3>
-          </div>
-          <div>
-            {settingsItems.map((item) => (
-              <Row
-                key={item.name}
-                label={item.name}
-                icon={<item.icon size={16} />}
-                selected={selectedSection === item.id}
-                size="compact"
-                className="cursor-pointer mb-1"
-                onClick={() => onSectionChange?.(item.id)}
-              />
-            ))}
-          </div>
-        </div>
+
       </div>
     </aside>
   );

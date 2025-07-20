@@ -5,32 +5,25 @@ import { Avatar } from "@/components/spring-ui/avatar";
 import { Row } from "@/components/spring-ui/row";
 import { 
   SettingsAltIcon, 
-  UsersIcon, 
-  UpgradeIcon, 
-  PaymentIcon, 
-  AppsIcon, 
-  TemplatesIcon,
+  CMSManageIcon,
   ChevronSmallDownIcon,
-  WebflowIcon,
-  SitesStackIcon,
-  VideoTutorialsIcon,
-  AssetManager24Icon
+  FieldImageIcon,
+  FieldVideo24Icon,
+  FieldImageSetIcon,
+  AddIcon,
 } from "@/icons";
 import { useState } from "react";
 
 const mainNavItems = [
-  { name: "All sites", id: "all-sites", icon: SitesStackIcon },
-  { name: "Team", id: "team", icon: UsersIcon },
-  { name: "Assets", id: "assets", icon: AssetManager24Icon },
-  { name: "Tutorials", id: "tutorials", icon: VideoTutorialsIcon },
+  { name: "Collections", id: "collections", icon: CMSManageIcon },
+  { name: "Images", id: "cms-images", icon: FieldImageIcon },
+  { name: "Videos", id: "cms-videos", icon: FieldVideo24Icon },
+  { name: "Image Sets", id: "image-sets", icon: FieldImageSetIcon },
+  { name: "Add Collection", id: "add-collection", icon: AddIcon },
 ];
 
 const settingsItems = [
   { name: "General", id: "general", icon: SettingsAltIcon },
-  { name: "Plans", id: "plans", icon: UpgradeIcon },
-  { name: "Billing", id: "billing", icon: PaymentIcon },
-  { name: "Apps & integrations", id: "apps-integrations", icon: AppsIcon },
-  { name: "Libraries & templates", id: "libraries-templates", icon: TemplatesIcon },
 ];
 
 const workspaces = [
@@ -40,18 +33,18 @@ const workspaces = [
   { name: "Personal", current: false },
 ];
 
-interface DashboardSidebarProps {
+interface CMSSidebarProps {
   selectedSection?: string;
   onSectionChange?: (section: string) => void;
 }
 
-export function DashboardSidebar({ selectedSection = "all-sites", onSectionChange }: DashboardSidebarProps) {
+export function CMSSidebar({ selectedSection = "collections", onSectionChange }: CMSSidebarProps) {
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const currentWorkspace = workspaces.find(w => w.current) || workspaces[0];
 
   return (
     <aside 
-      className="overflow-y-auto border-none bg-[var(--bg-secondary)]"
+      className="h-screen overflow-y-auto border-none bg-[var(--bg-secondary)]"
       style={{ width: '240px' }}
     >
       <div className="p-4 space-y-4">
@@ -81,7 +74,7 @@ export function DashboardSidebar({ selectedSection = "all-sites", onSectionChang
                 {workspaces.map((workspace) => (
                   <button
                     key={workspace.name}
-                                          className="w-full flex items-center space-x-3 px-3 py-2 text-sm hover:bg-[var(--bg-raised)] text-left"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm hover:bg-[var(--bg-raised)] text-left"
                   >
                     <Avatar 
                       size="lg" 
@@ -98,7 +91,7 @@ export function DashboardSidebar({ selectedSection = "all-sites", onSectionChang
         </div>
 
         {/* Main Navigation */}
-        <div>
+        <div className="mt-10">
           {mainNavItems.map((item) => (
             <Row
               key={item.name}

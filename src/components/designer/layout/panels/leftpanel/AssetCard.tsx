@@ -15,9 +15,10 @@ interface AssetCardProps {
   className?: string;
   selected?: boolean;
   onSelect?: (selected: boolean) => void;
+  selectable?: boolean;
 }
 
-const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, onClick, isSelected, className, selected = false, onSelect }) => {
+const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, onClick, isSelected, className, selected = false, onSelect, selectable = true }) => {
   // Get placeholder image based on asset type
   const getPlaceholderImage = () => {
     switch (type) {
@@ -82,8 +83,8 @@ const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, 
             className="max-w-full max-h-full object-contain"
           />
         </div>
-        {/* Checkbox on hover or if selected */}
-        {(hovered || selected) && (
+        {/* Checkbox on hover or if selected - only show if selectable */}
+        {selectable && (hovered || selected) && (
           <div className="absolute top-2 left-2 z-10">
             <input
               type="checkbox"

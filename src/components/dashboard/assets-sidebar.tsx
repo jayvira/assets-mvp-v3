@@ -4,34 +4,26 @@ import { Button } from "@/components/spring-ui/button";
 import { Avatar } from "@/components/spring-ui/avatar";
 import { Row } from "@/components/spring-ui/row";
 import { 
-  SettingsAltIcon, 
-  UsersIcon, 
-  UpgradeIcon, 
-  PaymentIcon, 
-  AppsIcon, 
-  TemplatesIcon,
+  AssetManager24Icon,
   ChevronSmallDownIcon,
-  WebflowIcon,
-  SitesStackIcon,
-  VideoTutorialsIcon,
-  AssetManager24Icon
+  HomeIcon,
+  ImageIcon,
+  PerformanceIcon,
+  VariableIcon,
+  AISparkleIcon,
 } from "@/icons";
 import { useState } from "react";
+import { useRouter, usePathname } from 'next/navigation';
 
 const mainNavItems = [
-  { name: "All sites", id: "all-sites", icon: SitesStackIcon },
-  { name: "Team", id: "team", icon: UsersIcon },
-  { name: "Assets", id: "assets", icon: AssetManager24Icon },
-  { name: "Tutorials", id: "tutorials", icon: VideoTutorialsIcon },
+  { name: "Overview", id: "overview", icon: HomeIcon, href: "/dashboard/assets/overview" },
+  { name: "All assets", id: "all-assets", icon: AssetManager24Icon, href: "/dashboard/assets/all-assets" },
+  { name: "Create", id: "images", icon: AISparkleIcon, href: "/dashboard/assets/create" },
+  { name: "Insights", id: "insights", icon: PerformanceIcon, href: "/dashboard/assets/insights" },
+  { name: "Guidelines", id: "brand-guidelines", icon: VariableIcon, href: "/dashboard/assets/guidelines" },
 ];
 
-const settingsItems = [
-  { name: "General", id: "general", icon: SettingsAltIcon },
-  { name: "Plans", id: "plans", icon: UpgradeIcon },
-  { name: "Billing", id: "billing", icon: PaymentIcon },
-  { name: "Apps & integrations", id: "apps-integrations", icon: AppsIcon },
-  { name: "Libraries & templates", id: "libraries-templates", icon: TemplatesIcon },
-];
+
 
 const workspaces = [
   { name: "My Workspace", current: true },
@@ -40,18 +32,17 @@ const workspaces = [
   { name: "Personal", current: false },
 ];
 
-interface DashboardSidebarProps {
-  selectedSection?: string;
-  onSectionChange?: (section: string) => void;
-}
+interface AssetsSidebarProps {}
 
-export function DashboardSidebar({ selectedSection = "all-sites", onSectionChange }: DashboardSidebarProps) {
+export function AssetsSidebar({}: AssetsSidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const currentWorkspace = workspaces.find(w => w.current) || workspaces[0];
 
   return (
     <aside 
-      className="overflow-y-auto border-none bg-[var(--bg-secondary)]"
+      className="h-screen overflow-y-auto border-none bg-[var(--bg-secondary)]"
       style={{ width: '240px' }}
     >
       <div className="p-4 space-y-4">
@@ -81,7 +72,7 @@ export function DashboardSidebar({ selectedSection = "all-sites", onSectionChang
                 {workspaces.map((workspace) => (
                   <button
                     key={workspace.name}
-                                          className="w-full flex items-center space-x-3 px-3 py-2 text-sm hover:bg-[var(--bg-raised)] text-left"
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm hover:bg-[var(--bg-raised)] text-left"
                   >
                     <Avatar 
                       size="lg" 
@@ -98,41 +89,25 @@ export function DashboardSidebar({ selectedSection = "all-sites", onSectionChang
         </div>
 
         {/* Main Navigation */}
-        <div>
+        <div className="mt-10">
           {mainNavItems.map((item) => (
             <Row
               key={item.name}
               label={item.name}
               icon={<item.icon size={16} />}
-              selected={selectedSection === item.id}
+              selected={pathname === item.href}
               size="compact"
               className="cursor-pointer mb-1"
-              onClick={() => onSectionChange?.(item.id)}
+              onClick={() => {
+                if (pathname !== item.href) {
+                  router.push(item.href);
+                }
+              }}
             />
           ))}
         </div>
 
-        {/* Settings Section */}
-        <div className="pt-4 space-y-1">
-          <div className="mb-3">
-            <h3 className="px-3 body-text-bold text-[var(--text-secondary)]">
-              Settings
-            </h3>
-          </div>
-          <div>
-            {settingsItems.map((item) => (
-              <Row
-                key={item.name}
-                label={item.name}
-                icon={<item.icon size={16} />}
-                selected={selectedSection === item.id}
-                size="compact"
-                className="cursor-pointer mb-1"
-                onClick={() => onSectionChange?.(item.id)}
-              />
-            ))}
-          </div>
-        </div>
+
       </div>
     </aside>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, ModalPortal, ModalOverlay } from '@/components/spring-ui/modal';
-import { CloseDefaultIcon } from '@/icons';
+import { CloseDefaultIcon, ShareIcon } from '@/icons';
 import { Badge } from '@/components/spring-ui/badge';
 import { Input } from '@/components/spring-ui/input';
 import { Textarea } from '@/components/spring-ui/textarea';
@@ -19,8 +19,8 @@ import {
   DropdownMenuItem
 } from '@/components/spring-ui/dropdown-menu';
 import { ArchiveIcon } from '@/icons/ArchiveIcon';
-import { ChevronLargeLeftIcon } from '@/icons/ChevronLargeLeftIcon';
-import { ChevronLargeRightIcon } from '@/icons/ChevronLargeRightIcon';
+import { ChevronLargeLeftIcon } from '@/icons';
+import { ChevronLargeRightIcon } from '@/icons';
 import { TagPill } from '@/components/TagPill';
 
 interface AssetDetailModalProps {
@@ -220,6 +220,24 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
         return (
           <div className="space-y-5">
             <div>
+              <h3 className="text-black/60 mb-1">Sites Associated</h3>
+              <div className="space-y-2">
+                {asset.sites && asset.sites.length > 0 ? (
+                  asset.sites.map((site: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <span className="text-sm font-medium">{site.name}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{site.pages || 0} pages</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">No sites associated with this asset</p>
+                )}
+              </div>
+            </div>
+            <div>
               <h3 className="text-black/60 mb-1">Pages Used</h3>
               <p className="text-sm text-gray-900">Pages found using this asset</p>
             </div>
@@ -293,7 +311,13 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button variant="default">Share</Button>
+              <IconButton variant="outline" aria-label="Share">
+                <ShareIcon size={16} />
+              </IconButton>
+              <Button variant="outline">
+                <AISparkleIcon size={16} className="mr-1" />
+                Edit
+              </Button>
               <Button variant="primary">Download</Button>
               <IconButton variant="ghost" aria-label="Close" onClick={() => onOpenChange(false)}>
                 <CloseDefaultIcon size={20} />
