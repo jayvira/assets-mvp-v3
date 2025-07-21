@@ -88,8 +88,8 @@ export default function CreateAssetsPage() {
   }, [isLoading, loadingMessages.length]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-screen pt-32 pb-8 px-6">
+      <div className="w-full max-w-2xl mx-auto">
         {/* Centered Layout */}
         <div className="text-center space-y-8">
           
@@ -154,7 +154,7 @@ export default function CreateAssetsPage() {
                   </div>
                 </div>
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="comfortable"
                   onClick={() => window.open('https://marys-prototypes.webflow.io/asset-vision', '_blank')}
                 >
@@ -186,14 +186,14 @@ export default function CreateAssetsPage() {
 
           {/* Generated Assets Section */}
           {(isLoading || loadedAssets.length > 0) && (
-            <div className="mt-12">
-              <div className="flex justify-center gap-6">
+            <div className="mt-12 -mx-24">
+              <div className="flex justify-center gap-8">
                 {isLoading ? (
                   loadingImages.map((image, index) => (
                     <div key={index} className="relative">
-                      <div className="w-40 h-40 bg-gray-200 rounded-lg animate-pulse"></div>
+                      <div className="w-56 h-56 bg-gray-200 rounded-lg animate-pulse"></div>
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-8 h-8 border-2 border-gray-400 rounded-full border-t-transparent animate-spin"></div>
+                        <div className="w-10 h-10 border-2 border-gray-400 rounded-full border-t-transparent animate-spin"></div>
                       </div>
                     </div>
                   ))
@@ -203,7 +203,7 @@ export default function CreateAssetsPage() {
                       <img 
                         src={asset.url} 
                         alt={asset.altText || `Generated asset ${index + 1}`}
-                        className="w-40 h-40 object-cover rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
+                        className="w-56 h-56 object-cover rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 rounded-lg transition-colors duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <button className="bg-white/90 text-black px-3 py-1 rounded-md text-sm font-medium">

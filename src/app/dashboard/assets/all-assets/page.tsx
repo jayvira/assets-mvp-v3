@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import AssetCard from "@/components/designer/layout/panels/leftpanel/AssetCard";
 import { ImageIcon, VideoIcon, MainDocsIcon } from "@/icons";
@@ -22,7 +22,8 @@ const allFileTypes = ["Images", "Videos", "Documents", "Illustrator & Vector Gra
 
 const allStatuses = ["Approved", "Needs Edit", "In Progress", "Needs Review", "No status"];
 
-export default function AllAssetsPage() {
+// Component that uses useSearchParams
+function AllAssetsContent() {
   const searchParams = useSearchParams();
   const [selectedAssetIds, setSelectedAssetIds] = useState<number[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
@@ -401,5 +402,13 @@ export default function AllAssetsPage() {
         </div>
       )}
     </>
+  );
+}
+
+export default function AllAssetsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AllAssetsContent />
+    </Suspense>
   );
 } 
