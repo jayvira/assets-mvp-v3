@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import Image from 'next/image';
 import { useNavigator } from '@/context/NavigatorContext';
 import { useMode } from '@/context/ModeContext';
@@ -44,18 +44,55 @@ type PanelType =
 // Define AssetType for consistency (should match AssetCardProps)
 type AssetItemType = 'images' | 'videos' | 'documents';
 
-const LeftSidebar = () => {
+// Define FullAssetItem type to match AssetDetailPanel expectations
+type FullAssetItem = {
+  id: number;
+  type: AssetItemType;
+  icon: any;
+  name: string;
+  title: string;
+  fileSize: string;
+  uploadedBy: string;
+  uploadedDate: string;
+  lastModifiedDate: string;
+  url: string;
+};
+
+// Add context for opening assets panel
+export const SidebarPanelContext = createContext<{ 
+  openAssetsPanel: () => void;
+  openAssetsPanelNormal: () => void;
+  onAssetSelected?: (asset: any) => void;
+  isReplaceMode?: boolean;
+}>({ 
+  openAssetsPanel: () => {},
+  openAssetsPanelNormal: () => {},
+  onAssetSelected: undefined,
+  isReplaceMode: false
+});
+
+// Hook to use the sidebar panel context
+export const useSidebarPanel = () => {
+  const context = useContext(SidebarPanelContext);
+  if (!context) {
+    throw new Error('useSidebarPanel must be used within a SidebarPanelContext.Provider');
+  }
+  return context;
+};
+
+interface LeftSidebarProps {
+  activePanel: PanelType;
+  setActivePanel: React.Dispatch<React.SetStateAction<PanelType>>;
+}
+
+const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }) => {
   const { toggleNavigator } = useNavigator();
   const { mode } = useMode();
   const { selectedPage, setSelectedPage } = usePages();
   const basePath = BASE_PATH;
-  const [activePanel, setActivePanel] = useState<PanelType>(null);
   const [prevSelectedPage, setPrevSelectedPage] = useState(selectedPage);
-  const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<{
-    id: number;
-    type: AssetItemType;
-    name: string;
-  } | null>(null);
+  const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<FullAssetItem | null>(null);
+  const { openAssetsPanelNormal } = useSidebarPanel(); // Get the normal mode function
 
   // Function to toggle panels
   const togglePanel = (panel: PanelType) => {
@@ -75,7 +112,7 @@ const LeftSidebar = () => {
   };
 
   // Handle asset selection from AssetsPanel
-  const handleAssetSelected = (asset: { id: number; type: AssetItemType; name: string } | null) => {
+  const handleAssetSelected = (asset: FullAssetItem | null) => {
     setSelectedAssetForDetail(asset);
   };
 
@@ -85,7 +122,7 @@ const LeftSidebar = () => {
       setActivePanel(null);
     }
     setPrevSelectedPage(selectedPage);
-  }, [selectedPage, activePanel, prevSelectedPage]);
+  }, [selectedPage, activePanel, prevSelectedPage, setActivePanel]);
 
   // Function called when an item is selected in AddPanel
   const handleAddPanelItemSelected = () => {
@@ -100,177 +137,158 @@ const LeftSidebar = () => {
   });
 
   return (
-    <>
-      <div 
-        className="relative h-full w-[35px] bg-[var(--bg-primary)] border-r border-[var(--border-default)] flex-shrink-0 left-sidebar"
-      >
-        {/* Top Icons */}
-        <div className="flex flex-col pt-[4px]">
-          {/* Top section */}
-          <Tooltip text="Add Panel">
-            <div 
-              className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'add' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-              onClick={() => togglePanel('add')}
-            >
-              <AddPanel24Icon 
-                style={getIconStyle(activePanel === 'add')} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="Pages">
-            <div 
-              className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'pages' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-              onClick={() => togglePanel('pages')}
-            >
-              <PagePanel24Icon 
-                style={getIconStyle(activePanel === 'pages')} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="Navigator">
-            <div 
-              className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'navigator' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-              onClick={() => togglePanel('navigator')}
-            >
-              <Navigator24Icon 
-                style={getIconStyle(activePanel === 'navigator')} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          {/* First divider */}
-          <div className="w-full h-[1px] bg-[var(--border-default)] my-2"></div>
-          
-          {/* Middle section */}
-          <Tooltip text="Components">
-            <div 
-              className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'components' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-              onClick={() => togglePanel('components')}
-            >
-              <ComponentFill24Icon 
-                style={getIconStyle(activePanel === 'components')} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="Variables">
-            <div 
-              className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'variables' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-              onClick={() => togglePanel('variables')}
-            >
-              <CapabilityVariable24Icon 
-                style={getIconStyle(activePanel === 'variables')} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="Styles">
-            <div 
-              className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'styles' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-              onClick={() => togglePanel('styles')}
-            >
-              <StyleManager24Icon 
-                style={getIconStyle(activePanel === 'styles')} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="Assets">
-            <div 
-              className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'assets' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-              onClick={() => togglePanel('assets')}
-            >
-              <AssetManager24Icon 
-                style={getIconStyle(activePanel === 'assets')} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          {/* Second divider */}
-          <div className="w-full h-[1px] bg-[var(--border-default)] my-2"></div>
-          
-          {/* Lower section */}
-          <Tooltip text="Apps">
-            <div 
-              className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'apps' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-              onClick={() => togglePanel('apps')}
-            >
-              <CapabilityApps24Icon 
-                style={getIconStyle(activePanel === 'apps')} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="Activity Log">
-            <div 
-              className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'activityLog' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-              onClick={() => togglePanel('activityLog')}
-            >
-              <ActivityLog24Icon 
-                style={getIconStyle(activePanel === 'activityLog')} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-        </div>
-
-        {/* Bottom fixed icons */}
-        <div className="absolute bottom-2 w-full flex flex-col">
-          <Tooltip text="Settings">
-            <div className="w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group">
-              <ToolbarSettings24Icon 
-                style={{ color: 'var(--text-secondary)' }} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="AI Help">
-            <div className="w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group">
-              <AIWand24Icon 
-                style={{ color: 'var(--text-secondary)' }} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="Auditor">
-            <div className="w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group">
-              <Audit24Icon 
-                style={{ color: 'var(--text-secondary)' }} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="Search">
-            <div className="w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group">
-              <ToolbarSearch24Icon 
-                style={{ color: 'var(--text-secondary)' }} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-          
-          <Tooltip text="Videos">
-            <div className="w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group">
-              <VideoTutorialsPanel24Icon 
-                style={{ color: 'var(--text-secondary)' }} 
-                className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
-              />
-            </div>
-          </Tooltip>
-        </div>
+    <div 
+      className="relative h-full w-[35px] bg-[var(--bg-primary)] border-r border-[var(--border-default)] flex-shrink-0 left-sidebar"
+    >
+      {/* Top Icons */}
+      <div className="flex flex-col pt-[4px]">
+        {/* Top section */}
+        <Tooltip text="Add Panel">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'add' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => togglePanel('add')}
+          >
+            <AddPanel24Icon 
+              style={getIconStyle(activePanel === 'add')} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        <Tooltip text="Pages">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'pages' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => togglePanel('pages')}
+          >
+            <PagePanel24Icon 
+              style={getIconStyle(activePanel === 'pages')} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        <Tooltip text="Navigator">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'navigator' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => togglePanel('navigator')}
+          >
+            <Navigator24Icon 
+              style={getIconStyle(activePanel === 'navigator')} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        {/* First divider */}
+        <div className="w-full h-[1px] bg-[var(--border-default)] my-2"></div>
+        
+        {/* Middle section */}
+        <Tooltip text="Components">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'components' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => togglePanel('components')}
+          >
+            <ComponentFill24Icon 
+              style={getIconStyle(activePanel === 'components')} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        <Tooltip text="Variables">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'variables' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => togglePanel('variables')}
+          >
+            <CapabilityVariable24Icon 
+              style={getIconStyle(activePanel === 'variables')} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        <Tooltip text="Styles">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'styles' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => togglePanel('styles')}
+          >
+            <StyleManager24Icon 
+              style={getIconStyle(activePanel === 'styles')} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        <Tooltip text="Assets">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'assets' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => openAssetsPanelNormal()}
+          >
+            <AssetManager24Icon 
+              style={getIconStyle(activePanel === 'assets')} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        {/* Second divider */}
+        <div className="w-full h-[1px] bg-[var(--border-default)] my-2"></div>
+        
+        {/* Lower section */}
+        <Tooltip text="Apps">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'apps' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => togglePanel('apps')}
+          >
+            <CapabilityApps24Icon 
+              style={getIconStyle(activePanel === 'apps')} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        <Tooltip text="Activity Log">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'activityLog' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => togglePanel('activityLog')}
+          >
+            <ActivityLog24Icon 
+              style={getIconStyle(activePanel === 'activityLog')} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        {/* Third divider */}
+        <div className="w-full h-[1px] bg-[var(--border-default)] my-2"></div>
+        
+        {/* Bottom section */}
+        <Tooltip text="Settings">
+          <div className="w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group">
+            <ToolbarSettings24Icon 
+              style={{ color: 'var(--text-secondary)' }} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        <Tooltip text="Search">
+          <div className="w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group">
+            <ToolbarSearch24Icon 
+              style={{ color: 'var(--text-secondary)' }} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
+        
+        <Tooltip text="Videos">
+          <div className="w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group">
+            <VideoTutorialsPanel24Icon 
+              style={{ color: 'var(--text-secondary)' }} 
+              className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
+            />
+          </div>
+        </Tooltip>
       </div>
 
       {/* Panels */}
@@ -295,15 +313,16 @@ const LeftSidebar = () => {
             title="Assets" 
             isOpen={activePanel === 'assets'} 
             onClose={closePanel}
-            panelWidth={selectedAssetForDetail ? '648px' : '248px'}
+            panelWidth={selectedAssetForDetail ? '800px' : '320px'}
             hideHeader={true}
           >
             <div className="flex h-full w-full">
-              <div className="flex-shrink-0 w-[248px] border-r border-[var(--border-default)]">
+              <div className="flex-shrink-0 w-[320px] border-r border-[var(--border-default)]">
                 <AssetsPanel 
                   onAssetSelect={handleAssetSelected}
                   selectedAssetId={selectedAssetForDetail?.id || null}
                   onClose={closePanel}
+                  isDetailPanelOpen={!!selectedAssetForDetail}
                 />
               </div>
               {selectedAssetForDetail && (
@@ -318,10 +337,11 @@ const LeftSidebar = () => {
           </Panel>
         )
       }
+      
       <Panel title="Apps" isOpen={activePanel === 'apps'} onClose={closePanel} />
       <Panel title="Activity Log" isOpen={activePanel === 'activityLog'} onClose={closePanel} />
-    </>
+    </div>
   );
 };
 
-export default LeftSidebar; 
+export default LeftSidebar;

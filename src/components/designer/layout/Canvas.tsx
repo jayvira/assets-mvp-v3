@@ -2,18 +2,68 @@
 
 import React from 'react';
 import { usePages } from '@/context/PagesContext';
+import { Asset, getAssetById } from '@/lib/supabase';
+import { SettingsIcon } from '@/icons/SettingsIcon';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/spring-ui/popover';
+import { Button } from '@/components/spring-ui/button';
+import { Textarea } from '@/components/spring-ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/spring-ui/select';
+import { useSidebarPanel } from './LeftSidebar'; // <-- Import the hook
 
-const Canvas: React.FC = () => {
+interface CanvasProps {
+  selectedHeroAsset: Asset | null;
+  onAssetSelected: (asset: Asset) => void;
+}
+
+const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) => {
   const { selectedPage } = usePages();
+  const [selectedHeroImage, setSelectedHeroImage] = React.useState(false);
+  const [popoverOpen, setPopoverOpen] = React.useState(false);
+  const [assetCache, setAssetCache] = React.useState<{[key: number]: Asset}>({});
+  const { openAssetsPanel } = useSidebarPanel(); // <-- Use the hook
+
+  // Helper function to get asset with caching
+  const getAssetWithCache = async (id: number): Promise<Asset | null> => {
+    if (assetCache[id]) {
+      return assetCache[id];
+    }
+    const asset = await getAssetById(id);
+    if (asset) {
+      setAssetCache(prev => ({ ...prev, [id]: asset }));
+    }
+    return asset;
+  };
+
+  // Handle click outside to deselect
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('#hero-image') && !target.closest('.hero-image-container')) {
+      setSelectedHeroImage(false);
+    }
+  };
+
+  // Handle asset selection from AssetsPanel
+  const handleAssetSelected = (asset: Asset) => {
+    onAssetSelected(asset);
+    setSelectedHeroImage(false); // Close the selection when asset is replaced
+  };
 
   // Placeholder content for different pages
   const renderPageContent = () => {
     switch (selectedPage) {
       case '/':
         return (
-          <div className="p-8" style={{ color: 'var(--black)' }}>
-            <h1 className="text-2xl font-bold mb-4">Home Page</h1>
-            <p>This is the home page placeholder.</p>
+          <div className="w-full h-full relative">
+            <img 
+              src="/mary-prototype/images/forme-thumbnail.png"
+              alt="Forme Homepage"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                console.error('Image failed to load:', e);
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
           </div>
         );
       case '/contact':
@@ -149,6 +199,267 @@ const Canvas: React.FC = () => {
             </button>
           </div>
         );
+      case '/fall-refresh-campaign':
+        return (
+          <div className="w-full h-full bg-white overflow-auto">
+            {/* Header */}
+            <header className="flex items-center justify-between px-8 py-6 border-b border-gray-200">
+              <div className="flex items-center space-x-8">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-black rounded flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">+</span>
+                  </div>
+                  <span className="text-xl font-bold text-black">Forme</span>
+                </div>
+                <nav className="flex items-center space-x-6">
+                  <a href="#" className="text-black hover:text-gray-600 flex items-center space-x-1">
+                    <span>Classes</span>
+                    <span className="text-xs">▼</span>
+                  </a>
+                  <a href="#" className="text-black hover:text-gray-600 flex items-center space-x-1">
+                    <span>About</span>
+                    <span className="text-xs">▼</span>
+                  </a>
+                  <a href="#" className="text-black hover:text-gray-600 flex items-center space-x-1">
+                    <span>Blog</span>
+                    <span className="text-xs">▼</span>
+                  </a>
+                  <a href="#" className="text-black hover:text-gray-600 flex items-center space-x-1">
+                    <span>Support</span>
+                    <span className="text-xs">▼</span>
+                  </a>
+                </nav>
+              </div>
+              <button className="px-6 py-2 border border-black rounded-lg text-black hover:bg-gray-50">
+                Join now
+              </button>
+            </header>
+
+            {/* Hero Section */}
+            <section className="px-8 py-16 flex items-center">
+              <div className="flex-1 pr-16">
+                <div className="mb-4">
+                  <span className="text-orange-500 font-semibold text-sm">THIS FALL</span>
+                </div>
+                <h1 className="text-6xl font-bold text-black mb-6 leading-tight">
+                  Move. Sweat. Belong.
+                </h1>
+                <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+                  Reignite your wellness journey this Fall with premium fitness classes designed for busy professionals who demand excellence.
+                </p>
+                
+                {/* Features */}
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-black">⚡</span>
+                    <span className="text-black">Expert-led group classes</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-black">🔄</span>
+                    <span className="text-black">Design-forward studio spaces</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-black">❤️</span>
+                    <span className="text-black">Supportive, vibrant community</span>
+                  </div>
+                </div>
+
+                {/* CTA Buttons */}
+                <div className="flex space-x-4">
+                  <button className="px-8 py-3 border border-black rounded-lg text-black hover:bg-gray-50 font-semibold">
+                    Start your free month
+                  </button>
+                  <button className="px-8 py-3 border border-black rounded-lg text-black hover:bg-gray-50 font-semibold">
+                    Find your studio
+                  </button>
+                </div>
+              </div>
+              
+              {/* Hero Image */}
+              <div className={`flex-1 relative rounded-lg cursor-pointer hero-image-container ${selectedHeroImage ? 'border-2 border-blue-500' : 'border-2 border-transparent'}`}>
+                {/* Selection Tag */}
+                {selectedHeroImage && (
+                  <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded flex items-center space-x-1 z-10">
+                    <span>image_cover</span>
+                    <Popover modal open={popoverOpen} onOpenChange={setPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <button className="hover:bg-blue-600 transition-colors p-1 rounded flex items-center justify-center">
+                          <SettingsIcon size={12} className="text-white" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-0" title="Image settings">
+                        {/* Image Preview */}
+                        <div className="p-4" onClick={(e) => e.stopPropagation()}>
+                          <div className="w-full h-32 bg-gray-100 rounded mb-4 flex items-center justify-center relative group">
+                            <img 
+                              src={selectedHeroAsset?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                              alt="Preview"
+                              className="w-full h-full object-cover rounded"
+                            />
+                            {/* Hover Overlay */}
+                            <div className="absolute inset-0 bg-black/50 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="primary" size="compact" onClick={() => {
+                                setPopoverOpen(false); // Close the popover first
+                                // Small delay to ensure popover is closed
+                                setTimeout(() => {
+                                  openAssetsPanel();
+                                }, 100);
+                              }}>Replace</Button>
+                            </div>
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="space-y-2 mb-4">
+                            <Button className="w-full" variant="outline">
+                              <img 
+                                src="https://cdn.prod.website-files.com/687d379371b4f02fa4f58460/687d5cb32b208d4435d0b0ca_icon_AIEdit.svg"
+                                alt="AI Edit"
+                                className="w-4 h-4 mr-2"
+                              />
+                              Edit image
+                            </Button>
+                          </div>
+                          
+                          {/* Settings */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <label className="text-sm font-medium">Fit</label>
+                              <Select defaultValue="cover">
+                                <SelectTrigger className="w-48">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="cover">Cover</SelectItem>
+                                  <SelectItem value="contain">Contain</SelectItem>
+                                  <SelectItem value="fill">Fill</SelectItem>
+                                  <SelectItem value="crop">Crop</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="flex items-start justify-between">
+                              <label className="text-sm font-medium mt-2">Alt text</label>
+                              <Textarea 
+                                defaultValue={selectedHeroAsset?.altText || "image of fitness class for a wellness center"}
+                                className="text-sm w-48 h-20 resize-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Footer */}
+                        <div className="p-3" onClick={(e) => e.stopPropagation()}>
+                          <Button className="w-full" variant="outline">
+                            Show all settings
+                            <span className="ml-2">→</span>
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
+                <img 
+                  id="hero-image"
+                  src={selectedHeroAsset?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                  alt={selectedHeroAsset?.altText || "Fall refresh campaign hero image"}
+                  className="w-full h-96 object-cover rounded-lg"
+                  onClick={() => setSelectedHeroImage(!selectedHeroImage)}
+                />
+              </div>
+            </section>
+
+            {/* Class Types Section */}
+            <section className="px-8 py-16 bg-gray-50">
+              <div className="text-center mb-12">
+                <div className="text-gray-500 text-sm mb-2">DISCOVER YOUR STRONG</div>
+                <h2 className="text-4xl font-bold text-black">Find Your Perfect Class Fit</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Pilates Card */}
+                <div className="bg-white rounded-lg overflow-hidden shadow-sm">
+                  <img 
+                    src={getAssetById(30)?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                    alt={getAssetById(30)?.altText || "Fall refresh campaign pilates class image"}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-black mb-3">Pilates: Power Meets Precision</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      Sculpt, stretch, and strengthen. Build core confidence and tone your entire body with our expert-led Pilates sessions.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Strength Card */}
+                <div className="bg-white rounded-lg overflow-hidden shadow-sm">
+                  <img 
+                    src={getAssetById(31)?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                    alt={getAssetById(31)?.altText || "Fall refresh campaign strength training image"}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-black mb-3">Strength: Push Your Limits</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      Lift spirits and build power. Dynamic sessions designed to challenge and transform your strength and endurance.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Mindfulness Card */}
+                <div className="bg-white rounded-lg overflow-hidden shadow-sm">
+                  <img 
+                    src={getAssetById(32)?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                    alt={getAssetById(32)?.altText || "Fall refresh campaign mindfulness and wellness image"}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-black mb-3">Mindfulness: Breathe & Flow</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      Find your center through mindful movement. Balance body and mind with breathing techniques and gentle flow.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Bottom CTA Section */}
+            <section className="px-8 py-16 flex items-center">
+              <div className="flex-1 pr-16">
+                <h2 className="text-5xl font-bold text-black mb-8">
+                  Move. Sweat. Belong. Repeat.
+                </h2>
+                
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-orange-500">→</span>
+                    <span className="text-black">Pilates, barre, and strength—your way.</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-orange-500">→</span>
+                    <span className="text-black">Design-forward studios. Energizing vibes.</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="text-orange-500">→</span>
+                    <span className="text-black">Find your fit. Join our community.</span>
+                  </div>
+                </div>
+
+                <button className="px-8 py-3 border border-black rounded-lg text-black hover:bg-gray-50 font-semibold">
+                  Start your free month
+                </button>
+              </div>
+              
+              <div className="flex-1">
+                <img 
+                  src={getAssetById(33)?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                  alt={getAssetById(33)?.altText || "Fall refresh campaign community studio image"}
+                  className="w-full h-80 object-cover rounded-lg"
+                />
+              </div>
+            </section>
+          </div>
+        );
       default:
         return (
           <div className="p-8" style={{ color: 'var(--black)' }}>
@@ -163,6 +474,7 @@ const Canvas: React.FC = () => {
     <div 
       className="absolute inset-0 w-full h-full overflow-auto"
       style={{ backgroundColor: 'var(--white)' }}
+      onClick={handleCanvasClick}
     >
       {renderPageContent()}
     </div>

@@ -12,10 +12,10 @@ import {
   CloseDefaultIcon
 } from '@/icons';
 import { MainDocsIcon } from '@/icons/MainDocsIcon';
-import AssetCard from './AssetCard';
+import AssetCardDesigner from './AssetCardDesigner';
 import PanelHeader from '../PanelHeader';
-import { ASSETS } from '@/config/assets';
-// import AssetDetailModal from './AssetDetailModal'; // Removed as it's replaced by a side panel
+import { getAssetsForSite, Asset } from '@/lib/supabase';
+import { useSidebarPanel } from '../../LeftSidebar';
 
 // Define asset types
 type AssetType = 'all' | 'images' | 'videos' | 'documents';
@@ -41,33 +41,69 @@ type FullAssetItem = {
   uploadedBy: string;
   uploadedDate: string;
   lastModifiedDate: string;
+  url: string; // Add the real asset URL
 };
-
-// Use centralized assets data
-const mockAssets: FullAssetItem[] = ASSETS.map(asset => ({
-  id: asset.id,
-  type: asset.fileType === 'Images' ? 'images' : asset.fileType === 'Videos' ? 'videos' : 'documents',
-  icon: asset.icon === 'ImageIcon' ? ImageIcon : asset.icon === 'VideoIcon' ? VideoIcon : MainDocsIcon,
-  name: asset.name,
-  title: formatTitle(asset.name),
-  fileSize: asset.fileSize,
-  uploadedBy: asset.uploadedBy,
-  uploadedDate: asset.uploadedDate.split('T')[0],
-  lastModifiedDate: asset.dateModified.split('T')[0],
-}));
 
 // Update props interface for AssetsPanel
 interface AssetsPanelProps {
   onAssetSelect: (asset: FullAssetItem | null) => void;
   selectedAssetId: number | null;
   onClose: () => void;
+  isDetailPanelOpen?: boolean; // Add prop to indicate if detail panel is open
 }
 
-const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetId, onClose }) => {
+const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetId, onClose, isDetailPanelOpen = false }) => {
   const [activeTab, setActiveTab] = useState<AssetType>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [assets, setAssets] = useState<FullAssetItem[]>([...mockAssets]);
+  const [assets, setAssets] = useState<FullAssetItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { onAssetSelected, isReplaceMode } = useSidebarPanel(); // Get the asset selection handler and replace mode from context
+  const [objectUrls, setObjectUrls] = useState<string[]>([]); // Track object URLs for cleanup
+
+  // Fetch assets from Supabase on component mount
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching assets for Site 1...');
+        // Fetch assets for Site 1 (Forme.com)
+        const supabaseAssets = await getAssetsForSite("1");
+        console.log('Supabase assets received:', supabaseAssets.length);
+        
+        // Transform Supabase assets to FullAssetItem format
+        const transformedAssets: FullAssetItem[] = supabaseAssets.map(asset => ({
+          id: asset.id,
+          type: asset.fileType === 'Images' ? 'images' : asset.fileType === 'Videos' ? 'videos' : 'documents',
+          icon: asset.icon === 'ImageIcon' ? ImageIcon : asset.icon === 'VideoIcon' ? VideoIcon : MainDocsIcon,
+          name: asset.name,
+          title: formatTitle(asset.name),
+          fileSize: asset.fileSize,
+          uploadedBy: asset.uploadedBy,
+          uploadedDate: asset.uploadedDate.split('T')[0],
+          lastModifiedDate: asset.dateModified.split('T')[0],
+          url: asset.url,
+        }));
+        
+        console.log('Transformed assets:', transformedAssets.length);
+        setAssets(transformedAssets);
+      } catch (error) {
+        console.error('Error fetching assets:', error);
+        setAssets([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssets();
+  }, []);
+
+  // Cleanup object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      objectUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [objectUrls]);
 
   // Handle file uploads
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,8 +121,10 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
       const fileSize = file.size > 1024 * 1024
         ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
         : `${(file.size / 1024).toFixed(1)} KB`;
-      // Use FileReader for preview URL (for images/videos)
-      // For now, just use a placeholder
+      // Generate preview URL for uploaded files
+      const previewUrl = URL.createObjectURL(file);
+      // Track the object URL for cleanup
+      setObjectUrls(prev => [...prev, previewUrl]);
       return {
         id: Date.now() + idx,
         type,
@@ -97,6 +135,7 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
         uploadedBy,
         uploadedDate,
         lastModifiedDate,
+        url: previewUrl, // Use the generated preview URL
       };
     });
     setAssets(prev => [...newAssets, ...prev]);
@@ -128,9 +167,20 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
     if (selectedAssetId === assetId) {
       onAssetSelect(null);
     } else {
-      const asset = mockAssets.find(a => a.id === assetId);
+      const asset = assets.find(a => a.id === assetId);
       if (asset) {
-        onAssetSelect(asset);
+        if (isReplaceMode) {
+          // Replace mode: update hero image and close panel
+          if (onAssetSelected) {
+            const assetData = assets.find(a => a.id === assetId);
+            if (assetData) {
+              onAssetSelected(assetData);
+            }
+          }
+        } else {
+          // Normal mode: select asset for detail panel
+          onAssetSelect(asset);
+        }
       }
     }
   };
@@ -138,7 +188,7 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
   return (
     <div className="flex flex-col h-full" onClick={handlePanelClick}>
       {/* Custom Panel Header */}
-      <PanelHeader title="Assets" onClose={onClose} />
+      <PanelHeader title={isReplaceMode ? "Replace Image" : "Assets"} onClose={onClose} />
 
       {/* Search and Upload Section */}
       <div className="p-2 border-b border-[var(--border-default)]">
@@ -182,19 +232,27 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
 
       {/* Unified Asset Grid */}
       <div className="p-2 flex-grow overflow-y-auto">
-        <div className="grid grid-cols-2 gap-2">
-          {filteredAssets.map((asset) => (
-            <AssetCard
-              key={asset.id}
-              id={asset.id}
-              type={asset.type}
-              icon={asset.icon}
-              name={asset.name}
-              onClick={() => handleAssetClick(asset.id)}
-              isSelected={selectedAssetId === asset.id}
-              className="asset-card"
-            />
-          ))}
+        <div className="grid grid-cols-2 gap-4">
+          {loading ? (
+            <p>Loading assets...</p>
+          ) : filteredAssets.length === 0 ? (
+            <p>No assets found.</p>
+          ) : (
+            filteredAssets.map((asset) => (
+              <AssetCardDesigner
+                key={asset.id}
+                id={asset.id}
+                type={asset.type}
+                icon={asset.icon}
+                name={asset.name}
+                onClick={() => handleAssetClick(asset.id)}
+                isSelected={isReplaceMode ? false : selectedAssetId === asset.id} // Only show selection in normal mode
+                className="asset-card"
+                assetUrl={asset.url}
+                isDetailPanelOpen={!isReplaceMode && isDetailPanelOpen && selectedAssetId === asset.id} // Only show detail panel in normal mode
+              />
+            ))
+          )}
         </div>
       </div>
 

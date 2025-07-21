@@ -8,66 +8,11 @@ import Accordion from '@/components/spring-ui/accordion';
 import { Input } from "@/components/spring-ui/input";
 import { Row } from "@/components/spring-ui/row";
 import { usePages } from '@/context/PagesContext';
-
-// Page item interface
-interface PageItem {
-  name: string;
-  path: string;
-  icon?: React.ReactNode;
-  children?: PageItem[];
-  draft?: boolean;
-}
-
-// Section interface
-interface PageSection {
-  title: string;
-  items: PageItem[];
-  expanded: boolean;
-}
+import { SITE_PAGES, PageItem, PageSection } from '@/config/pages';
 
 const PagesPanel = () => {
-  // Initialize sections with the ones visible in the image
-  const [sections] = useState<PageSection[]>([
-    {
-      title: 'Static pages',
-      expanded: true,
-      items: [
-        { name: 'Home', path: '/' },
-        { name: 'Contact Us', path: '/contact' },
-        { name: '[Draft] Styles', path: '/styles', draft: true }
-      ]
-    },
-    {
-      title: 'CMS Collection pages',
-      expanded: true,
-      items: [
-        { name: 'Testimonials Template', path: '/testimonials' }
-      ]
-    },
-    {
-      title: 'Utility pages',
-      expanded: true,
-      items: [
-        { name: 'Password', path: '/password' },
-        { name: '404', path: '/404' }
-      ]
-    },
-    {
-      title: 'Static page templates',
-      expanded: false,
-      items: []
-    },
-    {
-      title: 'Ecommerce pages',
-      expanded: false,
-      items: []
-    },
-    {
-      title: 'User pages',
-      expanded: false,
-      items: []
-    }
-  ]);
+  // Use centralized site pages configuration
+  const [sections] = useState<PageSection[]>(SITE_PAGES);
 
   // Use the Pages context
   const { selectedPage, setSelectedPage } = usePages();

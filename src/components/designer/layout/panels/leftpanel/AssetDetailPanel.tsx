@@ -38,7 +38,7 @@ const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, onClose }) =
   };
 
   return (
-    <div className="flex flex-col h-full w-[400px] border-l border-[var(--border-default)]">
+    <div className="flex flex-col h-full w-full border-l border-[var(--border-default)]">
       {/* Panel Header for Asset Details */}
       <div className="flex items-center justify-between border-b border-[var(--border-default)] p-2">
         <h2 className="text-sm font-medium text-[var(--text-primary)]">Asset Details</h2>
@@ -48,7 +48,7 @@ const AssetDetailPanel: React.FC<AssetDetailPanelProps> = ({ asset, onClose }) =
       </div>
 
       {/* Asset Preview */}
-      <div className="aspect-video bg-gray-100 mb-4 flex items-center justify-center overflow-hidden flex-shrink-0">
+      <div className="aspect-video mb-4 flex items-center justify-center overflow-hidden flex-shrink-0 bg-white/5">
         <img 
           src={asset.url || getPlaceholderImage()} 
           alt={asset.name}

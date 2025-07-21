@@ -60,7 +60,7 @@ export function SiteCard({ site }: SiteCardProps) {
     <div className="overflow-hidden group">
       {/* Site Image with Hover Overlay */}
       <div 
-        className="relative overflow-hidden border-b border-[var(--border-default)]"
+        className="relative overflow-hidden border-b border-[var(--border-default)] border border-gray-200"
         style={{ height: '157px', borderRadius: '4px' }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

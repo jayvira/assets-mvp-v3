@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AISparkleIcon } from '@/icons/AISparkleIcon';
 import { Badge } from '@/components/spring-ui/badge';
@@ -10,17 +10,54 @@ import ProjectCard from '@/components/dashboard/project-card';
 import { ImageIcon, UploadIcon, AddIcon } from '@/icons';
 import { Button } from '@/components/spring-ui/button';
 import { SITES, getSiteNameById } from '@/config/sites';
-import { ASSETS, getAssetsForSite, getAssetCountForSite, getPreviewImagesForSite } from '@/config/assets';
-
-// Use centralized assets data
-const mockAssets = ASSETS;
+import { getAllAssets, getAssetsForSite, getAssetCountForSite, getPreviewImagesForSite } from '@/lib/supabase';
 
 export default function AssetsOverviewPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [assets, setAssets] = useState<any[]>([]);
+  const [projectsData, setProjectsData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch assets and projects data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const allAssets = await getAllAssets();
+        setAssets(allAssets);
+
+        // Generate projects data dynamically based on real asset relationships
+        const projects = await Promise.all(
+          SITES.slice(0, 3).map(async (site) => {
+            const assetCount = await getAssetCountForSite(site.id);
+            const previewImages = await getPreviewImagesForSite(site.id);
+            return {
+              site: {
+                ...site,
+                thumbnail: site.thumbnail
+              },
+              assetCount,
+              previewImages
+            };
+          })
+        );
+
+        setProjectsData(projects);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setAssets([]);
+        setProjectsData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const assetStats = [
-    { label: 'Total Assets', value: '1,247', change: '+12%', trend: 'up' },
+    { label: 'Total Assets', value: loading ? '...' : assets.length.toString(), change: '+12%', trend: 'up' },
     { label: 'Storage Used', value: '2.4 GB', change: '+8%', trend: 'up' },
     { label: 'Recent Uploads', value: '23', change: '+15%', trend: 'up' },
     { label: 'Shared Assets', value: '156', change: '+5%', trend: 'up' },
@@ -29,18 +66,8 @@ export default function AssetsOverviewPage() {
     { label: 'Performance Alert', value: '2', change: 'hero images', trend: 'down' },
   ];
 
-  // Use the first 4 assets from the mock data for recent assets
-  const recentAssets = mockAssets.slice(0, 4);
-
-  // Generate projects data dynamically based on real asset relationships
-  const projectsData = SITES.slice(0, 3).map(site => ({
-    site: {
-      ...site,
-      thumbnail: site.thumbnail
-    },
-    assetCount: getAssetCountForSite(site.id),
-    previewImages: getPreviewImagesForSite(site.id)
-  }));
+  // Use the first 4 assets for recent assets
+  const recentAssets = assets.slice(0, 4);
 
   return (
     <div className="p-6 space-y-12">
@@ -106,7 +133,7 @@ export default function AssetsOverviewPage() {
       <div className="pt-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <AIToolCard
-            title="Image"
+            title="Create"
             description="Generate images with your styles and brand guidelines."
             icon="🖼️"
             iconBgColor="bg-blue-500"
@@ -127,7 +154,8 @@ export default function AssetsOverviewPage() {
             description="Work with our AI to generate images or get recommendations based on your unique needs."
             icon="💬"
             iconBgColor="bg-green-500"
-            onOpenClick={() => console.log('Open AI Chat')}
+            onClick={() => router.push('/dashboard/assets/create')}
+            onOpenClick={() => router.push('/dashboard/assets/create')}
           />
           
           <AIToolCard
@@ -162,7 +190,7 @@ export default function AssetsOverviewPage() {
               site={project.site}
               assetCount={project.assetCount}
               previewImages={project.previewImages}
-              onClick={() => console.log('Project clicked:', project.site.name)}
+              onClick={() => router.push(`/dashboard/assets/all-assets?site=${project.site.id}`)}
             />
           ))}
         </div>
@@ -204,7 +232,7 @@ export default function AssetsOverviewPage() {
             </div>
           </div>
           
-          {recentAssets.map((asset) => (
+          {recentAssets.map((asset: any) => (
             <AssetCard
               key={asset.id}
               id={asset.id}

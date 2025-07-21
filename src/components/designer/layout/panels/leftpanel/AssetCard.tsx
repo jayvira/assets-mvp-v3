@@ -16,9 +16,10 @@ interface AssetCardProps {
   selected?: boolean;
   onSelect?: (selected: boolean) => void;
   selectable?: boolean;
+  assetUrl?: string; // Add real asset URL
 }
 
-const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, onClick, isSelected, className, selected = false, onSelect, selectable = true }) => {
+const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, onClick, isSelected, className, selected = false, onSelect, selectable = true, assetUrl }) => {
   // Get placeholder image based on asset type
   const getPlaceholderImage = () => {
     switch (type) {
@@ -78,7 +79,7 @@ const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, 
       >
         <div className="w-full h-full flex items-center justify-center">
           <img 
-            src={url || getPlaceholderImage()} 
+            src={assetUrl || url || getPlaceholderImage()} 
             alt={name}
             className="max-w-full max-h-full object-contain"
           />

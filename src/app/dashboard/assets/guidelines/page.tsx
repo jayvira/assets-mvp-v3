@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AssetCard from '@/components/designer/layout/panels/leftpanel/AssetCard';
 import ColorCard from '@/components/dashboard/color-card';
@@ -10,18 +10,38 @@ import { Table, TableHeader, TableRow, TableCell } from '@/components/spring-ui/
 import { ImageIcon, UploadIcon, AddIcon } from '@/icons';
 import { Button } from '@/components/spring-ui/button';
 import { AIOptimizeIcon } from '@/icons/AIOptimizeIcon';
-import { ASSETS, getAllAssets } from '@/config/assets';
+import { getAllAssets } from '@/lib/supabase';
 
 export default function BrandGuidelinesPage() {
   const router = useRouter();
+  const [assets, setAssets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch assets from Supabase
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        setLoading(true);
+        const allAssets = await getAllAssets();
+        setAssets(allAssets);
+      } catch (error) {
+        console.error('Error fetching assets:', error);
+        setAssets([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssets();
+  }, []);
 
   // Filter assets to only show those with "logo" tag, limit to 5
-  const logoAssets = getAllAssets().filter(asset => 
+  const logoAssets = assets.filter((asset: any) => 
     asset.tags && asset.tags.includes("logo")
   ).slice(0, 5);
 
   // Filter assets to only show those with "icon" tag, limit to 5
-  const iconAssets = getAllAssets().filter(asset => 
+  const iconAssets = assets.filter((asset: any) => 
     asset.tags && asset.tags.includes("icon")
   ).slice(0, 5);
 

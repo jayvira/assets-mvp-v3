@@ -22,6 +22,7 @@ import { ArchiveIcon } from '@/icons/ArchiveIcon';
 import { ChevronLargeLeftIcon } from '@/icons';
 import { ChevronLargeRightIcon } from '@/icons';
 import { TagPill } from '@/components/TagPill';
+import { supabase } from '@/lib/supabase';
 
 interface AssetDetailModalProps {
   open: boolean;
@@ -37,8 +38,36 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
   const [editingFilename, setEditingFilename] = React.useState('');
   const [altText, setAltText] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('details');
-  const [selectedTags, setSelectedTags] = React.useState<string[]>(asset?.tags || []);
+  const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
+  const [originalTags, setOriginalTags] = React.useState<string[]>([]);
   const [customTag, setCustomTag] = React.useState('');
+  const [saving, setSaving] = React.useState(false);
+
+  // Function to save asset changes to Supabase
+  const saveAssetChanges = async (updates: any) => {
+    if (!asset?.id) return;
+    
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('Assets')
+        .update(updates)
+        .eq('id', asset.id);
+
+      if (error) {
+        console.error('Error saving asset changes:', error);
+        // You could add a toast notification here
+      } else {
+        console.log('Asset changes saved successfully');
+        // Update the local asset object
+        Object.assign(asset, updates);
+      }
+    } catch (error) {
+      console.error('Error saving asset changes:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Keyboard navigation for left/right arrows
   React.useEffect(() => {
@@ -62,7 +91,17 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
       setFilename(initialName);
       setEditingFilename(initialName);
       setAltText(asset.altText || '');
-      setSelectedTags(asset?.tags || []);
+      
+      // Handle tags from Supabase - ensure they're properly parsed
+      const assetTags = asset?.tags || [];
+      console.log('Asset detail modal - Asset:', asset);
+      console.log('Asset detail modal - Tags from Supabase:', assetTags);
+      console.log('Asset detail modal - Tags type:', typeof assetTags);
+      console.log('Asset detail modal - Tags is array:', Array.isArray(assetTags));
+      
+      const tagsArray = Array.isArray(assetTags) ? assetTags : [];
+      setOriginalTags(tagsArray);
+      setSelectedTags(tagsArray);
     }
   }, [asset]);
 
@@ -70,7 +109,11 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
 
   // Function to get file type from asset
   const getFileType = (asset: any) => {
-    // Use the type property if it exists (for mock assets)
+    // Use the format field from Supabase if it exists
+    if (asset.format) {
+      return asset.format.toUpperCase();
+    }
+    // Fall back to the type property if it exists (for mock assets)
     if (asset.type && asset.type !== 'images' && asset.type !== 'videos' && asset.type !== 'documents') {
       return asset.type;
     }
@@ -104,12 +147,18 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                 onChange={(e) => setEditingFilename(e.target.value)}
                 onBlur={() => {
                   setFilename(editingFilename);
-                  asset.name = editingFilename + '.' + getFileType(asset).toLowerCase();
+                  const fileExtension = asset.format ? asset.format.toLowerCase() : getFileType(asset).toLowerCase();
+                  const newName = editingFilename + '.' + fileExtension;
+                  asset.name = newName;
+                  saveAssetChanges({ name: newName });
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     setFilename(editingFilename);
-                    asset.name = editingFilename + '.' + getFileType(asset).toLowerCase();
+                    const fileExtension = asset.format ? asset.format.toLowerCase() : getFileType(asset).toLowerCase();
+                    const newName = editingFilename + '.' + fileExtension;
+                    asset.name = newName;
+                    saveAssetChanges({ name: newName });
                   }
                 }}
                 className="text-sm shadow-none"
@@ -151,6 +200,7 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                   if (e.key === 'Enter') {
                     // Update the asset alt text
                     asset.altText = altText;
+                    saveAssetChanges({ altText });
                   }
                 }}
                 className="text-sm"
@@ -171,49 +221,66 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                 {asset.uploadedBy ? ` by ${asset.uploadedBy}` : ''}
               </p>
             </div>
-            {asset?.tags && asset.tags.length > 0 && (
-              <>
-                <hr className="border-t border-gray-200 mt-2 mb-6" style={{ marginBottom: '24px' }} />
-                {/* Custom Tag Input */}
-                <div className="flex items-center gap-2 mb-4">
-                  <BuyIcon className="w-6 h-6 text-gray-400" />
-                  <Input
-                    type="text"
-                    value={customTag}
-                    onChange={e => setCustomTag(e.target.value)}
-                    onKeyDown={e => {
+            <>
+              <hr className="border-t border-gray-200 mt-2 mb-6" style={{ marginBottom: '24px' }} />
+              {/* Custom Tag Input */}
+              <div className="flex items-center gap-2 mb-4">
+                <BuyIcon className="w-6 h-6 text-gray-400" />
+                <Input
+                  type="text"
+                  value={customTag}
+                  onChange={e => setCustomTag(e.target.value)}
+                                      onKeyDown={e => {
                       if (e.key === 'Enter' && customTag.trim()) {
                         if (!selectedTags.includes(customTag.trim())) {
-                          setSelectedTags([...selectedTags, customTag.trim()]);
+                          const newTags = [...selectedTags, customTag.trim()];
+                          setSelectedTags(newTags);
                         }
                         setCustomTag('');
                       }
                     }}
-                    placeholder="Add tags"
-                    className="flex-1 shadow-none"
-                  />
-                </div>
-                {/* End Custom Tag Input */}
-                <div className="flex items-center gap-2">
-                  <AISparkleIcon className="w-4 h-4 text-gray-400" />
-                  {asset?.tags.map((tag: string) => (
+                  placeholder="Add tags"
+                  className="flex-1 shadow-none"
+                />
+              </div>
+              {/* End Custom Tag Input */}
+              <div className="flex items-center gap-2">
+                <AISparkleIcon className="w-4 h-4 text-gray-400" />
+                {originalTags.length > 0 ? (
+                  originalTags.map((tag: string) => (
                     <TagPill
                       key={tag}
                       tag={tag}
                       isSelected={selectedTags.includes(tag)}
                       onClick={() => {
                         const isSelected = selectedTags.includes(tag);
+                        let newTags;
                         if (isSelected) {
-                          setSelectedTags(selectedTags.filter(t => t !== tag));
+                          newTags = selectedTags.filter(t => t !== tag);
                         } else {
-                          setSelectedTags([...selectedTags, tag]);
+                          newTags = [...selectedTags, tag];
                         }
+                        setSelectedTags(newTags);
                       }}
                     />
-                  ))}
-                </div>
-              </>
-            )}
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-500">No tags added yet</span>
+                )}
+                {/* Show newly added tags that aren't in the original tags */}
+                {selectedTags.filter(tag => !originalTags.includes(tag)).map((tag: string) => (
+                  <TagPill
+                    key={tag}
+                    tag={tag}
+                    isSelected={true}
+                    onClick={() => {
+                      const newTags = selectedTags.filter(t => t !== tag);
+                      setSelectedTags(newTags);
+                    }}
+                  />
+                ))}
+              </div>
+            </>
           </div>
         );
       case 'site-usage':

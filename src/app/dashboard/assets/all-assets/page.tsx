@@ -1,45 +1,29 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import AssetCard from "@/components/designer/layout/panels/leftpanel/AssetCard";
 import { ImageIcon, VideoIcon, MainDocsIcon } from "@/icons";
 import { FaThLarge, FaList } from "react-icons/fa";
 import AssetDetailModal from "@/components/designer/layout/panels/leftpanel/AssetDetailModal";
 import { Button } from '@/components/spring-ui/button';
+import { IconButton } from '@/components/spring-ui/icon-button';
 import { AddIcon } from '@/icons/AddIcon';
 import { SiteIcon } from '@/icons/SiteIcon';
 import { TagPill } from '@/components/TagPill';
 import { CloseDefaultIcon, DownloadIcon, ArchiveIcon } from '@/icons';
 import { getAllSites, getSiteNameById } from '@/config/sites';
-import { ASSETS, getAllAssets } from '@/config/assets';
+import { getAllAssets } from '@/lib/supabase';
 
 // Mock data constants - using centralized sites configuration
 const allSites = getAllSites();
-
-// Dynamically extract all unique tags from assets
-const getAllUniqueTags = () => {
-  const allAssets = getAllAssets();
-  const tagSet = new Set<string>();
-  
-  allAssets.forEach(asset => {
-    if (asset.tags && Array.isArray(asset.tags)) {
-      asset.tags.forEach(tag => tagSet.add(tag));
-    }
-  });
-  
-  return Array.from(tagSet).sort();
-};
-
-const allTags = getAllUniqueTags();
 
 const allFileTypes = ["Images", "Videos", "Documents", "Illustrator & Vector Graphics"];
 
 const allStatuses = ["Approved", "Needs Edit", "In Progress", "Needs Review", "No status"];
 
-// Use centralized assets data
-const initialMockAssets = ASSETS;
-
 export default function AllAssetsPage() {
+  const searchParams = useSearchParams();
   const [selectedAssetIds, setSelectedAssetIds] = useState<number[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [showAssetDetailModal, setShowAssetDetailModal] = useState(false);
@@ -53,8 +37,45 @@ export default function AllAssetsPage() {
   const [sortDesc, setSortDesc] = useState(true);
   const [viewMode, setViewMode] = useState<'gallery' | 'list'>('gallery');
   const [rowSelectedTags, setRowSelectedTags] = useState<{[key: number]: string[]}>({});
-  const [mockAssets, setMockAssets] = useState(initialMockAssets);
+  const [assets, setAssets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [allTags, setAllTags] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle URL parameter for site filter
+  useEffect(() => {
+    const siteParam = searchParams.get('site');
+    if (siteParam) {
+      setSelectedSite(siteParam);
+    }
+  }, [searchParams]);
+
+  // Fetch assets from Supabase
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        setLoading(true);
+        const supabaseAssets = await getAllAssets();
+        setAssets(supabaseAssets);
+        
+        // Extract unique tags from assets
+        const tagSet = new Set<string>();
+        supabaseAssets.forEach((asset: any) => {
+          if (asset.tags && Array.isArray(asset.tags)) {
+            asset.tags.forEach((tag: string) => tagSet.add(tag));
+          }
+        });
+        setAllTags(Array.from(tagSet).sort());
+      } catch (error) {
+        console.error('Error fetching assets:', error);
+        setAssets([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssets();
+  }, []);
 
   const handleSelect = (id: number, checked: boolean) => {
     if (checked) {
@@ -105,8 +126,8 @@ export default function AllAssetsPage() {
           height: 0,
         };
         
-        // Add the new asset to the mockAssets array using setState
-        setMockAssets(prev => [newAsset, ...prev]);
+        // Add the new asset to the assets array using setState
+        setAssets(prev => [newAsset, ...prev]);
       });
       
       // Clear the file input
@@ -117,15 +138,15 @@ export default function AllAssetsPage() {
   };
 
   // Filter assets based on search and filters
-  const filteredAssets = mockAssets.filter(asset => {
+  const filteredAssets = assets.filter((asset: any) => {
     const matchesSearch = asset.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTags = selectedTags.length === 0 || selectedTags.some(tag => asset.tags?.includes(tag));
+    const matchesTags = selectedTags.length === 0 || selectedTags.some((tag: string) => asset.tags?.includes(tag));
     const matchesFileType = !selectedFileType || asset.fileType === selectedFileType;
     const matchesStatus = !selectedStatus || asset.status === selectedStatus;
-    const matchesSite = !selectedSite || asset.sites?.some(site => site.id === selectedSite);
+    const matchesSite = !selectedSite || asset.sites?.some((site: any) => site.id === selectedSite);
     
     return matchesSearch && matchesTags && matchesFileType && matchesStatus && matchesSite;
-  }).sort((a, b) => {
+  }).sort((a: any, b: any) => {
     const dateA = new Date(a.dateModified).getTime();
     const dateB = new Date(b.dateModified).getTime();
     return sortDesc ? dateB - dateA : dateA - dateB;
@@ -232,8 +253,11 @@ export default function AllAssetsPage() {
             Clear
           </Button>
         </div>
+
         <div className="mb-4 flex items-center justify-between">
-          <span className="text-sm text-[var(--text-secondary)]">{filteredAssets.length} assets</span>
+          <span className="text-sm text-[var(--text-secondary)]">
+            {loading ? 'Loading assets...' : `${filteredAssets.length} assets`}
+          </span>
           <div className="flex items-center gap-4">
             <button
               className="flex items-center gap-1 text-sm text-gray-700 hover:text-black font-medium px-2 py-1 rounded transition-colors"
@@ -283,6 +307,7 @@ export default function AllAssetsPage() {
                 name={asset.name}
                 url={asset.url}
                 isSelected={selectedAssetIds.includes(asset.id)}
+                selected={selectedAssetIds.includes(asset.id)}
                 onClick={() => handleAssetCardClick(asset)}
                 onSelect={(checked) => handleSelect(asset.id, checked)}
               />
@@ -310,7 +335,7 @@ export default function AllAssetsPage() {
                     <div className="text-sm text-gray-500">{asset.fileSize} • {asset.uploadedBy}</div>
                   </div>
                                      <div className="flex gap-2">
-                     {asset.tags?.slice(0, 2).map((tag, index) => (
+                     {asset.tags?.slice(0, 2).map((tag: string, index: number) => (
                        <TagPill key={index} tag={tag} isSelected={false} />
                      ))}
                    </div>
@@ -326,9 +351,54 @@ export default function AllAssetsPage() {
       {showAssetDetailModal && selectedAsset && (
         <AssetDetailModal
           asset={selectedAsset}
+          assets={assets}
+          currentIndex={assets.findIndex(a => a.id === selectedAsset.id)}
+          onAssetChange={(newIndex) => {
+            if (newIndex >= 0 && newIndex < assets.length) {
+              setSelectedAsset(assets[newIndex]);
+            }
+          }}
           open={showAssetDetailModal}
           onOpenChange={setShowAssetDetailModal}
         />
+      )}
+      
+      {/* Floating Bulk Actions Bar - Show when assets are selected */}
+      {selectedAssetIds.length > 0 && (
+        <div className="fixed bottom-10 z-50 p-3 bg-black text-white rounded-lg flex items-center justify-between shadow-lg" style={{ left: '472px', width: '948px', transform: 'translateX(0)' }}>
+          <div className="flex items-center gap-3">
+            <IconButton 
+              variant="ghost" 
+              size="comfortable" 
+              onClick={() => setSelectedAssetIds([])}
+              className="text-white hover:bg-white/20"
+              aria-label="Deselect all assets"
+            >
+              <CloseDefaultIcon size={16} />
+            </IconButton>
+            <span className="text-sm font-medium text-white">
+              {selectedAssetIds.length} asset{selectedAssetIds.length !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <IconButton 
+              variant="ghost" 
+              size="comfortable" 
+              className="text-white hover:bg-white/20"
+              aria-label="Download selected assets"
+            >
+              <DownloadIcon size={16} />
+            </IconButton>
+            <IconButton 
+              variant="ghost" 
+              size="comfortable" 
+              className="text-white hover:bg-white/20"
+              aria-label="Archive selected assets"
+            >
+              <ArchiveIcon size={16} />
+            </IconButton>
+          </div>
+        </div>
       )}
     </>
   );

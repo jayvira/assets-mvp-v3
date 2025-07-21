@@ -97,11 +97,6 @@ const SelectItem = React.forwardRef<
     )}
     {...props}
   >
-    <span className="pointer-events-none absolute flex h-full items-center justify-center [.theme-designer_&]:left-1 [.theme-dashboard_&]:left-2">
-      <SelectPrimitive.ItemIndicator>
-        <CheckboxIcon className="h-4 w-4 text-[var(--text-secondary)]" />
-      </SelectPrimitive.ItemIndicator>
-    </span>
     <SelectPrimitive.ItemText className="flex items-center">{children}</SelectPrimitive.ItemText>
   </SelectPrimitive.Item>
 ))

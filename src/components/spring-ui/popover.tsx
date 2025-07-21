@@ -55,7 +55,7 @@ const PopoverContent = React.forwardRef<
     >
       {/* Popover Header (Optional) */}
       {title && (
-        <div className="flex items-center justify-between border-b border-[var(--border-default)] [.theme-designer_&]:px-1 [.theme-dashboard_&]:px-2 [.theme-designer_&]:py-0.5 [.theme-dashboard_&]:py-1">
+        <div className="flex items-center justify-between [.theme-designer_&]:px-2 [.theme-dashboard_&]:px-3 [.theme-designer_&]:py-1 [.theme-dashboard_&]:py-2">
           <h5 className="title-text-bold text-[var(--text-primary)]">{title}</h5>
           <div className="flex items-center [.theme-designer_&]:gap-0.5 [.theme-dashboard_&]:gap-1">
             {headerIcons && headerIcons.length > 0 && headerIcons.map((icon, index) => (
