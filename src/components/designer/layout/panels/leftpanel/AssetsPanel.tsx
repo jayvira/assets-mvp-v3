@@ -2,8 +2,14 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/spring-ui/input';
-import { Button } from '@/components/spring-ui/button';
-import { TabBar, TabBarItem } from '@/components/spring-ui/tab-bar';
+import { IconButton } from '@/components/spring-ui/icon-button';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/spring-ui/select';
 import { 
   AddIcon,
   UploadIcon,
@@ -12,13 +18,14 @@ import {
   CloseDefaultIcon
 } from '@/icons';
 import { MainDocsIcon } from '@/icons/MainDocsIcon';
+import { AssetManagerIcon } from '@/icons/AssetManagerIcon';
+import { AISparkleIcon } from '@/icons/AISparkleIcon';
 import AssetCardDesigner from './AssetCardDesigner';
 import PanelHeader from '../PanelHeader';
 import { getAssetsForSite, Asset } from '@/lib/supabase';
 import { useSidebarPanel } from '../../LeftSidebar';
 
 // Define asset types
-type AssetType = 'all' | 'images' | 'videos' | 'documents';
 type AssetItemType = 'images' | 'videos' | 'documents';
 
 // Helper function to capitalize the first letter of each word and remove file extension
@@ -42,6 +49,9 @@ type FullAssetItem = {
   uploadedDate: string;
   lastModifiedDate: string;
   url: string; // Add the real asset URL
+  fileType: string; // Add fileType for filtering
+  tags: string[]; // Add tags for filtering
+  status: string; // Add status for filtering
 };
 
 // Update props interface for AssetsPanel
@@ -53,13 +63,22 @@ interface AssetsPanelProps {
 }
 
 const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetId, onClose, isDetailPanelOpen = false }) => {
-  const [activeTab, setActiveTab] = useState<AssetType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [assets, setAssets] = useState<FullAssetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { onAssetSelected, isReplaceMode } = useSidebarPanel(); // Get the asset selection handler and replace mode from context
   const [objectUrls, setObjectUrls] = useState<string[]>([]); // Track object URLs for cleanup
+  
+  // Filter states
+  const [selectedFileType, setSelectedFileType] = useState<string>('all');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  
+  // Available filter options
+  const [availableFileTypes, setAvailableFileTypes] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
 
   // Fetch assets from Supabase on component mount
   useEffect(() => {
@@ -83,10 +102,30 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
           uploadedDate: asset.uploadedDate.split('T')[0],
           lastModifiedDate: asset.dateModified.split('T')[0],
           url: asset.url,
+          fileType: asset.fileType,
+          tags: asset.tags || [],
+          status: asset.status,
         }));
         
         console.log('Transformed assets:', transformedAssets.length);
         setAssets(transformedAssets);
+        
+        // Extract available filter options from assets
+        const fileTypeSet = new Set<string>();
+        const tagSet = new Set<string>();
+        const statusSet = new Set<string>();
+        
+        transformedAssets.forEach(asset => {
+          if (asset.fileType) fileTypeSet.add(asset.fileType);
+          if (asset.tags && Array.isArray(asset.tags)) {
+            asset.tags.forEach(tag => tagSet.add(tag));
+          }
+          if (asset.status) statusSet.add(asset.status);
+        });
+        
+        setAvailableFileTypes(Array.from(fileTypeSet).sort());
+        setAvailableTags(Array.from(tagSet).sort());
+        setAvailableStatuses(Array.from(statusSet).sort());
       } catch (error) {
         console.error('Error fetching assets:', error);
         setAssets([]);
@@ -136,6 +175,9 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
         uploadedDate,
         lastModifiedDate,
         url: previewUrl, // Use the generated preview URL
+        fileType: type === 'images' ? 'Images' : type === 'videos' ? 'Videos' : 'Documents',
+        tags: [],
+        status: 'No status',
       };
     });
     setAssets(prev => [...newAssets, ...prev]);
@@ -143,24 +185,74 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
     event.target.value = '';
   };
 
+  // Handle upload button click
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
   // Handle clicks within the AssetsPanel
   const handlePanelClick = (event: React.MouseEvent) => {
     const target = event.target as HTMLElement;
     const isAssetCardClick = target.closest('.asset-card');
+    const isSelectClick = target.closest('[data-radix-select-trigger]') || 
+                         target.closest('[data-radix-select-content]') ||
+                         target.closest('[data-radix-select-item]') ||
+                         target.closest('[role="option"]') ||
+                         target.closest('[role="listbox"]') ||
+                         target.closest('[role="combobox"]') ||
+                         target.closest('[data-radix-portal]');
 
-    if (!isAssetCardClick && selectedAssetId !== null) {
+    if (!isAssetCardClick && !isSelectClick && selectedAssetId !== null) {
       onAssetSelect(null);
     }
   };
 
-  // Filter assets based on active tab and search query
+  // Handle Select component clicks to prevent panel closure
+  const handleSelectClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+  };
+
+  // Handle clicks outside of open Select dropdowns to prevent panel closure
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Check if the click is on a Select component or its content
+      const isSelectClick = target.closest('[data-radix-select-trigger]') || 
+                           target.closest('[data-radix-select-content]') ||
+                           target.closest('[data-radix-select-item]') ||
+                           target.closest('[role="option"]') ||
+                           target.closest('[role="listbox"]') ||
+                           target.closest('[role="combobox"]') ||
+                           target.closest('[data-radix-portal]') ||
+                           target.closest('[data-radix-popper-content-wrapper]');
+      
+      // If it's a Select click, prevent the panel from closing
+      if (isSelectClick) {
+        event.stopPropagation();
+      }
+    };
+
+    document.addEventListener('click', handleDocumentClick, true);
+    
+    return () => {
+      document.removeEventListener('click', handleDocumentClick, true);
+    };
+  }, []);
+
+  // Filter assets based on active tab, search query, and filter selections
   const filteredAssets = assets.filter(asset => {
-    const matchesType = activeTab === 'all' || asset.type === activeTab;
+    const matchesType = true; // No activeTab, so all assets are matched
     const matchesSearch = searchQuery === '' || 
       asset.type.includes(searchQuery.toLowerCase()) || 
       asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       asset.title.toLowerCase().includes(searchQuery.toLowerCase()); // Include title in search
-    return matchesType && matchesSearch;
+    const matchesFileType = selectedFileType === 'all' || selectedFileType === '' || asset.fileType === selectedFileType;
+    const matchesTags = selectedTags.length === 0 || 
+      selectedTags.some(tag => asset.tags && asset.tags.includes(tag));
+    const matchesStatus = selectedStatus === 'all' || selectedStatus === '' || asset.status === selectedStatus;
+    
+    return matchesType && matchesSearch && matchesFileType && matchesTags && matchesStatus;
   });
 
   const handleAssetClick = (assetId: number) => {
@@ -186,11 +278,49 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
   };
 
   return (
-    <div className="flex flex-col h-full" onClick={handlePanelClick}>
-      {/* Custom Panel Header */}
-      <PanelHeader title={isReplaceMode ? "Replace Image" : "Assets"} onClose={onClose} />
+    <div className="flex flex-col h-full">
+      {/* Custom Panel Header with upload button */}
+      <div className="px-2 py-3 flex items-center justify-between">
+        <h2 className="title-text-bold">Assets</h2>
+        <div className="flex items-center gap-1">
+          {/* Hidden file input for uploads */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            multiple
+            onChange={handleFileChange}
+          />
+          <IconButton
+            variant="ghost"
+            size="comfortable"
+            onClick={handleUploadClick}
+            title="Upload Asset"
+          >
+            <UploadIcon size={16} />
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            size="comfortable"
+            onClick={() => window.open('https://marys-prototypes.webflow.io/asset-vision/dashboard/assets/overview', '_blank')}
+            title="Manage Assets"
+          >
+            <AssetManagerIcon size={16} />
+          </IconButton>
+          {onClose && (
+            <IconButton
+              variant="ghost"
+              size="comfortable"
+              onClick={onClose}
+              title="Close"
+            >
+              <CloseDefaultIcon size={16} />
+            </IconButton>
+          )}
+        </div>
+      </div>
 
-      {/* Search and Upload Section */}
+      {/* Search Section */}
       <div className="p-2 border-b border-[var(--border-default)]">
         <div className="relative mb-2">
           <Input 
@@ -199,39 +329,113 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        {/* Hidden file input for uploads */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          multiple
-          onChange={handleFileChange}
-        />
-        <Button 
-          variant="outline" 
-          className="w-full"
-          onClick={() => fileInputRef.current?.click()}
+        
+        {/* Filter Section */}
+        <div 
+          className="grid grid-cols-3 gap-2"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onMouseUp={(e) => e.stopPropagation()}
         >
-          <UploadIcon size={16} className="mr-2" />
-          Upload Asset
-        </Button>
+          {/* File Type Filter */}
+          <Select value={selectedFileType} onValueChange={setSelectedFileType}>
+            <SelectTrigger onClick={handleSelectClick}>
+              <SelectValue placeholder="File Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {availableFileTypes.map(fileType => (
+                <SelectItem key={fileType} value={fileType}>
+                  {fileType}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Tags Filter */}
+          <Select 
+            value={selectedTags.length > 0 ? selectedTags[0] : 'all'} 
+            onValueChange={(value) => setSelectedTags(value === 'all' ? [] : [value])}
+          >
+            <SelectTrigger onClick={handleSelectClick}>
+              <SelectValue placeholder="Tags" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Tags</SelectItem>
+              {availableTags.map(tag => (
+                <SelectItem key={tag} value={tag}>
+                  {tag}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Status Filter */}
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <SelectTrigger onClick={handleSelectClick}>
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              {availableStatuses.map(status => (
+                <SelectItem key={status} value={status}>
+                  {status}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Type Filter Tabs */}
-      <div className="px-2 border-b border-[var(--border-default)]">
-        <TabBar
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as AssetType)}
-        >
-          <TabBarItem value="all">All</TabBarItem>
-          <TabBarItem value="images">Images</TabBarItem>
-          <TabBarItem value="videos">Videos</TabBarItem>
-          <TabBarItem value="documents">Documents</TabBarItem>
-        </TabBar>
-      </div>
+      {/* Suggested Assets Section */}
+      {!loading && assets.length > 0 && (
+        <div className="suggestedassets-wrapper p-2">
+          <div className="p-2 overflow-hidden rounded-lg" style={{ backgroundColor: 'rgba(0, 125, 240, 0.1)' }}>
+            <h3 className="text-xs font-medium text-[var(--text-primary)] mb-3 flex items-center gap-1">
+              <AISparkleIcon size={12} />
+              Suggested assets
+            </h3>
+            <div className="relative">
+              <div className="flex gap-2">
+                {[61, 62, 63, 64].map((assetId) => {
+                  const asset = assets.find(a => a.id === assetId);
+                  if (!asset) return null;
+                  
+                  return (
+                    <div key={`suggested-${asset.id}`} className="flex-shrink-0 w-20">
+                      <AssetCardDesigner
+                        id={asset.id}
+                        type={asset.type}
+                        icon={asset.icon}
+                        name={asset.name}
+                        onClick={() => handleAssetClick(asset.id)}
+                        isSelected={isReplaceMode ? false : selectedAssetId === asset.id}
+                        className="asset-card"
+                        assetUrl={asset.url}
+                        isDetailPanelOpen={!isReplaceMode && isDetailPanelOpen && selectedAssetId === asset.id}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Gradient fade effect to suggest more content */}
+              <div className="absolute top-0 right-[-8px] w-8 h-full bg-gradient-to-l from-[#25313D] to-transparent pointer-events-none z-10"></div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Unified Asset Grid */}
-      <div className="p-2 flex-grow overflow-y-auto">
+      <div 
+        className="p-2 flex-grow overflow-y-auto"
+        onClick={(event) => {
+          const target = event.target as HTMLElement;
+          const isAssetCardClick = target.closest('.asset-card');
+          if (!isAssetCardClick && selectedAssetId !== null) {
+            onAssetSelect(null);
+          }
+        }}
+      >
         <div className="grid grid-cols-2 gap-4">
           {loading ? (
             <p>Loading assets...</p>

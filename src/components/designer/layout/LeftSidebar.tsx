@@ -222,7 +222,16 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }
         <Tooltip text="Assets">
           <div 
             className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'assets' ? 'bg-[var(--bg-tertiary)]' : ''}`}
-            onClick={() => openAssetsPanelNormal()}
+            onClick={() => {
+              if (activePanel === 'assets') {
+                // If assets panel is already open, close it
+                setActivePanel(null);
+                setSelectedAssetForDetail(null);
+              } else {
+                // If assets panel is closed, open it
+                openAssetsPanelNormal();
+              }
+            }}
           >
             <AssetManager24Icon 
               style={getIconStyle(activePanel === 'assets')} 

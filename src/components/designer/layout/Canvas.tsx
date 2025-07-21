@@ -1,14 +1,21 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { usePages } from '@/context/PagesContext';
-import { Asset, getAssetById } from '@/lib/supabase';
-import { SettingsIcon } from '@/icons/SettingsIcon';
+import { getAssetById, Asset } from '@/lib/supabase';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/spring-ui/popover';
 import { Button } from '@/components/spring-ui/button';
+import { Input } from '@/components/spring-ui/input';
 import { Textarea } from '@/components/spring-ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/spring-ui/select';
-import { useSidebarPanel } from './LeftSidebar'; // <-- Import the hook
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/spring-ui/select';
+import { SettingsIcon, ArrowLeftIcon } from '@/icons';
+import { useSidebarPanel } from './LeftSidebar';
 
 interface CanvasProps {
   selectedHeroAsset: Asset | null;
@@ -19,8 +26,20 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
   const { selectedPage } = usePages();
   const [selectedHeroImage, setSelectedHeroImage] = React.useState(false);
   const [popoverOpen, setPopoverOpen] = React.useState(false);
+  const [aiEditPopoverOpen, setAiEditPopoverOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isAiEditing, setIsAiEditing] = useState(false);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  
+  const loadingMessages = [
+    "Reviewing brand colors",
+    "Applying primary red #F8572F",
+    "Analyzing image composition",
+    "Generating enhanced version"
+  ];
   const [assetCache, setAssetCache] = React.useState<{[key: number]: Asset}>({});
-  const { openAssetsPanel } = useSidebarPanel(); // <-- Use the hook
+  const [fallRefreshAssets, setFallRefreshAssets] = React.useState<{[key: number]: Asset}>({});
+  const { openAssetsPanel } = useSidebarPanel();
 
   // Helper function to get asset with caching
   const getAssetWithCache = async (id: number): Promise<Asset | null> => {
@@ -33,6 +52,31 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
     }
     return asset;
   };
+
+  // Load fall refresh campaign assets
+  React.useEffect(() => {
+    const loadFallRefreshAssets = async () => {
+      const assetIds = [30, 31, 32, 33]; // Pilates, Strength, Mindfulness, Community
+      const assets: {[key: number]: Asset} = {};
+      
+      for (const id of assetIds) {
+        try {
+          const asset = await getAssetById(id);
+          if (asset) {
+            assets[id] = asset;
+          }
+        } catch (error) {
+          console.error(`Error loading asset ${id}:`, error);
+        }
+      }
+      
+      setFallRefreshAssets(assets);
+    };
+
+    if (selectedPage === '/fall-refresh-campaign') {
+      loadFallRefreshAssets();
+    }
+  }, [selectedPage]);
 
   // Handle click outside to deselect
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -47,6 +91,52 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
     onAssetSelected(asset);
     setSelectedHeroImage(false); // Close the selection when asset is replaced
   };
+
+  // Handle AI edit button click
+  const handleAiEditClick = () => {
+    console.log('AI Edit button clicked');
+    setPopoverOpen(false);
+    setTimeout(() => {
+      setAiEditPopoverOpen(true);
+      console.log('AI Edit popover should be open');
+    }, 100);
+  };
+
+  // Handle AI edit submission
+  const handleAiEditSubmit = () => {
+    console.log('AI Edit submitted with prompt:', aiPrompt);
+    setIsAiEditing(true);
+    setLoadingMessageIndex(0);
+    
+    // Simulate AI processing time
+    setTimeout(async () => {
+      try {
+        // Load asset 56 from Supabase
+        const newAsset = await getAssetById(56);
+        if (newAsset) {
+          // Replace the current hero asset with the new one
+          onAssetSelected(newAsset);
+        }
+      } catch (error) {
+        console.error('Error loading asset 56:', error);
+      }
+      
+      setIsAiEditing(false);
+      setAiEditPopoverOpen(false);
+      setAiPrompt('');
+    }, 3000); // 3 seconds to simulate AI processing
+  };
+
+  // Cycle through loading messages
+  React.useEffect(() => {
+    if (isAiEditing) {
+      const interval = setInterval(() => {
+        setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+      }, 800); // Change message every 800ms
+      
+      return () => clearInterval(interval);
+    }
+  }, [isAiEditing, loadingMessages.length]);
 
   // Placeholder content for different pages
   const renderPageContent = () => {
@@ -71,103 +161,32 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
           <div className="p-8" style={{ color: 'var(--black)' }}>
             <h1 className="text-2xl font-bold mb-4">Contact Us</h1>
             <p>This is the contact page content placeholder.</p>
-            <form className="mt-4">
-              <div className="mb-4">
-                <label className="block mb-1">Name</label>
-                <input 
-                  type="text" 
-                  className="p-2 w-full" 
-                  style={{ 
-                    border: `1px solid var(--gray-400)`,
-                    backgroundColor: 'var(--white)'
-                  }}
-                  placeholder="Your name" 
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">Email</label>
-                <input 
-                  type="email" 
-                  className="p-2 w-full" 
-                  style={{ 
-                    border: `1px solid var(--gray-400)`,
-                    backgroundColor: 'var(--white)'
-                  }}
-                  placeholder="Your email" 
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block mb-1">Message</label>
-                <textarea 
-                  className="p-2 w-full h-24" 
-                  style={{ 
-                    border: `1px solid var(--gray-400)`,
-                    backgroundColor: 'var(--white)'
-                  }}
-                  placeholder="Your message"
-                ></textarea>
-              </div>
-              <button 
-                type="button" 
-                className="px-4 py-2"
-                style={{ 
-                  backgroundColor: 'var(--blue-400)',
-                  color: 'var(--white)'
-                }}
-              >
-                Send Message
-              </button>
-            </form>
           </div>
         );
       case '/styles':
         return (
           <div className="p-8" style={{ color: 'var(--black)' }}>
-            <h1 className="text-2xl font-bold mb-4">[Draft] Styles Page</h1>
-            <p>This page is still in draft mode.</p>
-            <div className="mt-4 grid grid-cols-3 gap-4">
-              <div className="p-4" style={{ backgroundColor: 'var(--red-100)' }}>Color Sample</div>
-              <div className="p-4" style={{ backgroundColor: 'var(--blue-100)' }}>Color Sample</div>
-              <div className="p-4" style={{ backgroundColor: 'var(--green-100)' }}>Color Sample</div>
-            </div>
+            <h1 className="text-2xl font-bold mb-4">Styles</h1>
+            <p>This is the styles page content placeholder.</p>
           </div>
         );
       case '/testimonials':
         return (
           <div className="p-8" style={{ color: 'var(--black)' }}>
             <h1 className="text-2xl font-bold mb-4">Testimonials</h1>
-            <div className="mt-4 space-y-4">
-              <div 
-                className="p-4 rounded" 
-                style={{ border: `1px solid var(--gray-300)` }}
-              >
-                <p className="italic">"This product changed my life!"</p>
-                <p className="mt-2 font-bold">- John Doe</p>
-              </div>
-              <div 
-                className="p-4 rounded" 
-                style={{ border: `1px solid var(--gray-300)` }}
-              >
-                <p className="italic">"Excellent service and quality."</p>
-                <p className="mt-2 font-bold">- Jane Smith</p>
-              </div>
-            </div>
+            <p>This is the testimonials page content placeholder.</p>
           </div>
         );
       case '/password':
         return (
           <div className="p-8" style={{ color: 'var(--black)' }}>
             <h1 className="text-2xl font-bold mb-4">Password Protected</h1>
-            <p>This page requires a password to access.</p>
+            <p>This page is password protected.</p>
             <div className="mt-4">
               <input 
                 type="password" 
-                className="p-2" 
-                style={{ 
-                  border: `1px solid var(--gray-400)`,
-                  backgroundColor: 'var(--white)'
-                }}
-                placeholder="Enter password" 
+                placeholder="Enter password"
+                className="px-3 py-2 border border-gray-300 rounded"
               />
               <button 
                 type="button" 
@@ -310,7 +329,7 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
                           
                           {/* Action Buttons */}
                           <div className="space-y-2 mb-4">
-                            <Button className="w-full" variant="outline">
+                            <Button className="w-full" variant="outline" onClick={handleAiEditClick}>
                               <img 
                                 src="https://cdn.prod.website-files.com/687d379371b4f02fa4f58460/687d5cb32b208d4435d0b0ca_icon_AIEdit.svg"
                                 alt="AI Edit"
@@ -365,6 +384,87 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
                   className="w-full h-96 object-cover rounded-lg"
                   onClick={() => setSelectedHeroImage(!selectedHeroImage)}
                 />
+                {isAiEditing && (
+                  <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-8 h-8 border-2 border-white rounded-full border-t-transparent animate-spin"></div>
+                      <span className="text-white text-sm">{loadingMessages[loadingMessageIndex]}</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* AI Edit Popover positioned under the image */}
+                {aiEditPopoverOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 z-50">
+                    <div className="w-full pt-2 pb-4 px-4 bg-[var(--bg-primary)] text-[var(--text-primary)] rounded-lg shadow-lg border border-[var(--border-default)]">
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div></div>
+                      </div>
+                      
+                      {/* AI Prompt Input */}
+                      <div className="mb-4">
+                        <div className="relative">
+                          <textarea
+                            placeholder="Change the lighting in this image to be"
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            className="w-full h-28 p-3 rounded-[4px] border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] placeholder-[var(--input-placeholder)] resize-none focus:outline-none focus:border-[var(--input-border-focus)]"
+                            disabled={isAiEditing}
+                          />
+                          <div className="absolute bottom-3 left-2 flex items-center gap-2">
+                            <div className="flex gap-1">
+                              <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
+                                Add object
+                              </Button>
+                              <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
+                                Remove shadows
+                              </Button>
+                              <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
+                                Remove object
+                              </Button>
+                              <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
+                                Remove background
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Bottom Buttons */}
+                      <div className="flex items-center justify-between">
+                        <button 
+                          onClick={() => setAiEditPopoverOpen(false)}
+                          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                          disabled={isAiEditing}
+                        >
+                          <ArrowLeftIcon size={16} />
+                        </button>
+                        <Button 
+                          className="w-auto"
+                          onClick={handleAiEditSubmit}
+                          disabled={isAiEditing}
+                        >
+                          {isAiEditing ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-current rounded-full border-t-transparent animate-spin mr-2"></div>
+                              Processing...
+                            </>
+                          ) : (
+                            <>
+                              <img 
+                                src="https://cdn.prod.website-files.com/687d379371b4f02fa4f58460/687d5cb32b208d4435d0b0ca_icon_AIEdit.svg"
+                                alt="AI Edit"
+                                className="w-4 h-4 mr-2"
+                              />
+                              Edit image
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 
@@ -379,8 +479,8 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
                 {/* Pilates Card */}
                 <div className="bg-white rounded-lg overflow-hidden shadow-sm">
                   <img 
-                    src={getAssetById(30)?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
-                    alt={getAssetById(30)?.altText || "Fall refresh campaign pilates class image"}
+                    src={fallRefreshAssets[30]?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                    alt={fallRefreshAssets[30]?.altText || "Fall refresh campaign pilates class image"}
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-6">
@@ -394,8 +494,8 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
                 {/* Strength Card */}
                 <div className="bg-white rounded-lg overflow-hidden shadow-sm">
                   <img 
-                    src={getAssetById(31)?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
-                    alt={getAssetById(31)?.altText || "Fall refresh campaign strength training image"}
+                    src={fallRefreshAssets[31]?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                    alt={fallRefreshAssets[31]?.altText || "Fall refresh campaign strength training image"}
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-6">
@@ -409,8 +509,8 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
                 {/* Mindfulness Card */}
                 <div className="bg-white rounded-lg overflow-hidden shadow-sm">
                   <img 
-                    src={getAssetById(32)?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
-                    alt={getAssetById(32)?.altText || "Fall refresh campaign mindfulness and wellness image"}
+                    src={fallRefreshAssets[32]?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                    alt={fallRefreshAssets[32]?.altText || "Fall refresh campaign mindfulness and wellness image"}
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-6">
@@ -452,8 +552,8 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
               
               <div className="flex-1">
                 <img 
-                  src={getAssetById(33)?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
-                  alt={getAssetById(33)?.altText || "Fall refresh campaign community studio image"}
+                  src={fallRefreshAssets[33]?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                  alt={fallRefreshAssets[33]?.altText || "Fall refresh campaign community studio image"}
                   className="w-full h-80 object-cover rounded-lg"
                 />
               </div>
@@ -477,8 +577,9 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
       onClick={handleCanvasClick}
     >
       {renderPageContent()}
+      
     </div>
   );
 };
 
-export default Canvas; 
+export default Canvas;

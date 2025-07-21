@@ -15,29 +15,8 @@ interface PanelProps {
 const Panel: React.FC<PanelProps> = ({ title, isOpen, children, onClose, panelWidth = '248px', hideHeader = false }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-        // Check if the click was on the sidebar (we don't want to close if clicking on the sidebar)
-        const leftSidebar = document.querySelector('.left-sidebar');
-        if (leftSidebar && leftSidebar.contains(event.target as Node)) {
-          return;
-        }
-        
-        if (onClose) {
-          onClose();
-        }
-      }
-    };
-    
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
+  // Remove the click-outside behavior entirely
+  // The panel will only close via the close button or specific canvas clicks
   
   if (!isOpen) return null;
   
