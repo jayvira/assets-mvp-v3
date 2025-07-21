@@ -16,7 +16,7 @@ export const SITES: Site[] = [
     id: "1",
     name: "Forme.com",
     description: "A curated resource list to kickstart your design education",
-    thumbnail: "/images/forme-thumbnail.png",
+    thumbnail: "https://cdn.prod.website-files.com/687d379371b4f02fa4f58460/687dbb91da28da0f49ea92ed_Screenshot%202025-07-20%20at%204.27.59%E2%80%AFPM.png",
     status: "live",
     lastModified: "2 hours ago",
     domain: "forme.com",

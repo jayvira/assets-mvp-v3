@@ -29,7 +29,7 @@ import { SITES } from "@/config/sites";
 // Use centralized sites data
 const mockSites = SITES.map(site => ({
   ...site,
-  thumbnail: getImagePath(site.thumbnail || "")
+  thumbnail: site.thumbnail.startsWith('http') ? site.thumbnail : getImagePath(site.thumbnail || "")
 }));
 
 export function SiteGrid() {

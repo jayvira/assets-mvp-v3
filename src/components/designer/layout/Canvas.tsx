@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/spring-ui/select';
 import { SettingsIcon, ArrowLeftIcon } from '@/icons';
+import { ArrowRightIcon } from '@/icons/ArrowRightIcon';
 import { useSidebarPanel } from './LeftSidebar';
 
 interface CanvasProps {
@@ -29,6 +30,7 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
   const [aiEditPopoverOpen, setAiEditPopoverOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiEditing, setIsAiEditing] = useState(false);
+  const [isAiEditComplete, setIsAiEditComplete] = useState(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   
   const loadingMessages = [
@@ -39,6 +41,7 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
   ];
   const [assetCache, setAssetCache] = React.useState<{[key: number]: Asset}>({});
   const [fallRefreshAssets, setFallRefreshAssets] = React.useState<{[key: number]: Asset}>({});
+  const [originalAsset, setOriginalAsset] = React.useState<Asset | null>(null);
   const { openAssetsPanel } = useSidebarPanel();
 
   // Helper function to get asset with caching
@@ -106,7 +109,13 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
   const handleAiEditSubmit = () => {
     console.log('AI Edit submitted with prompt:', aiPrompt);
     setIsAiEditing(true);
+    setIsAiEditComplete(false);
     setLoadingMessageIndex(0);
+    
+    // Store the original asset before replacing it
+    if (selectedHeroAsset) {
+      setOriginalAsset(selectedHeroAsset);
+    }
     
     // Simulate AI processing time
     setTimeout(async () => {
@@ -122,9 +131,34 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
       }
       
       setIsAiEditing(false);
-      setAiEditPopoverOpen(false);
-      setAiPrompt('');
+      setIsAiEditComplete(true);
     }, 3000); // 3 seconds to simulate AI processing
+  };
+
+  // Handle accept button click
+  const handleAccept = () => {
+    setAiEditPopoverOpen(false);
+    setIsAiEditComplete(false);
+    setAiPrompt('');
+    setOriginalAsset(null);
+  };
+
+  // Handle deny button click
+  const handleDeny = () => {
+    setAiEditPopoverOpen(false);
+    setIsAiEditComplete(false);
+    setAiPrompt('');
+    setOriginalAsset(null);
+  };
+
+  // Handle A/B test button click
+  const handleABTest = () => {
+    console.log('A/B test button clicked');
+    // TODO: Implement A/B test functionality
+    setAiEditPopoverOpen(false);
+    setIsAiEditComplete(false);
+    setAiPrompt('');
+    setOriginalAsset(null);
   };
 
   // Cycle through loading messages
@@ -145,9 +179,9 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
         return (
           <div className="w-full h-full relative">
             <img 
-              src="/mary-prototype/images/forme-thumbnail.png"
+              src="https://cdn.prod.website-files.com/687d379371b4f02fa4f58460/687dbb91da28da0f49ea92ed_Screenshot%202025-07-20%20at%204.27.59%E2%80%AFPM.png"
               alt="Forme Homepage"
-              className="w-full h-full object-contain"
+              className="w-full object-cover object-top"
               onError={(e) => {
                 console.error('Image failed to load:', e);
                 const target = e.target as HTMLImageElement;
@@ -397,71 +431,127 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
                 {aiEditPopoverOpen && (
                   <div className="absolute top-full left-0 right-0 mt-2 z-50">
                     <div className="w-full pt-2 pb-4 px-4 bg-[var(--bg-primary)] text-[var(--text-primary)] rounded-lg shadow-lg border border-[var(--border-default)]">
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div></div>
-                      </div>
-                      
-                      {/* AI Prompt Input */}
-                      <div className="mb-4">
-                        <div className="relative">
-                          <textarea
-                            placeholder="Change the lighting in this image to be"
-                            value={aiPrompt}
-                            onChange={(e) => setAiPrompt(e.target.value)}
-                            className="w-full h-28 p-3 rounded-[4px] border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] placeholder-[var(--input-placeholder)] resize-none focus:outline-none focus:border-[var(--input-border-focus)]"
-                            disabled={isAiEditing}
-                          />
-                          <div className="absolute bottom-3 left-2 flex items-center gap-2">
-                            <div className="flex gap-1">
-                              <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
-                                Add object
+                      {!isAiEditComplete ? (
+                        <>
+                          {/* Header */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div></div>
+                          </div>
+                          
+                          {/* AI Prompt Input */}
+                          <div className="mb-4">
+                            <div className="relative">
+                              <textarea
+                                placeholder="Change the lighting in this image to be"
+                                value={aiPrompt}
+                                onChange={(e) => setAiPrompt(e.target.value)}
+                                className="w-full h-28 p-3 rounded-[4px] border border-[var(--input-border)] bg-[var(--input-bg)] text-[var(--text-primary)] placeholder-[var(--input-placeholder)] resize-none focus:outline-none focus:border-[var(--input-border-focus)]"
+                                disabled={isAiEditing}
+                              />
+                              <div className="absolute bottom-3 left-2 flex items-center gap-2">
+                                <div className="flex gap-1">
+                                  <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
+                                    Add object
+                                  </Button>
+                                  <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
+                                    Remove shadows
+                                  </Button>
+                                  <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
+                                    Remove object
+                                  </Button>
+                                  <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
+                                    Remove background
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Bottom Buttons */}
+                          <div className="flex items-center justify-between">
+                            <button 
+                              onClick={() => setAiEditPopoverOpen(false)}
+                              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                              disabled={isAiEditing}
+                            >
+                              <ArrowLeftIcon size={16} />
+                            </button>
+                            <Button 
+                              className="w-auto"
+                              onClick={handleAiEditSubmit}
+                              disabled={isAiEditing}
+                            >
+                              {isAiEditing ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-current rounded-full border-t-transparent animate-spin mr-2"></div>
+                                  Processing...
+                                </>
+                              ) : (
+                                <>
+                                  <img 
+                                    src="https://cdn.prod.website-files.com/687d379371b4f02fa4f58460/687d5cb32b208d4435d0b0ca_icon_AIEdit.svg"
+                                    alt="AI Edit"
+                                    className="w-4 h-4 mr-2"
+                                  />
+                                  Edit image
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {/* Post-Edit Content */}
+                          <div className="relative mb-4">
+                            <button 
+                              onClick={() => setAiEditPopoverOpen(false)}
+                              className="absolute left-0 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                            >
+                              <ArrowLeftIcon size={16} />
+                            </button>
+                            <h3 className="text-base font-medium text-[var(--text-primary)] text-center">
+                              How does this look?
+                            </h3>
+                            <div className="absolute right-0 top-1/2 transform -translate-y-1/2 flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="comfortable"
+                                onClick={handleABTest}
+                              >
+                                A/B test
                               </Button>
-                              <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
-                                Remove shadows
-                              </Button>
-                              <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
-                                Remove object
-                              </Button>
-                              <Button variant="outline" size="compact" className="text-xs h-6 px-2" disabled={isAiEditing}>
-                                Remove background
+                              <Button 
+                                variant="primary" 
+                                size="comfortable"
+                                onClick={handleAccept}
+                              >
+                                Accept
                               </Button>
                             </div>
                           </div>
-                        </div>
-                      </div>
-                      
-                      {/* Bottom Buttons */}
-                      <div className="flex items-center justify-between">
-                        <button 
-                          onClick={() => setAiEditPopoverOpen(false)}
-                          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                          disabled={isAiEditing}
-                        >
-                          <ArrowLeftIcon size={16} />
-                        </button>
-                        <Button 
-                          className="w-auto"
-                          onClick={handleAiEditSubmit}
-                          disabled={isAiEditing}
-                        >
-                          {isAiEditing ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-current rounded-full border-t-transparent animate-spin mr-2"></div>
-                              Processing...
-                            </>
-                          ) : (
-                            <>
+                          
+                          {/* Image Comparison */}
+                          <div className="flex items-center gap-4 mb-2">
+                            <div className="flex-1">
                               <img 
-                                src="https://cdn.prod.website-files.com/687d379371b4f02fa4f58460/687d5cb32b208d4435d0b0ca_icon_AIEdit.svg"
-                                alt="AI Edit"
-                                className="w-4 h-4 mr-2"
+                                src={originalAsset?.url || selectedHeroAsset?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                                alt="Original image"
+                                className="w-full h-32 object-cover rounded border border-[var(--border-default)]"
                               />
-                              Edit image
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                            </div>
+                            <div className="flex items-center justify-center">
+                              <ArrowRightIcon size={20} className="text-[var(--text-secondary)]" />
+                            </div>
+                            <div className="flex-1">
+                              <img 
+                                src={selectedHeroAsset?.url || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop"}
+                                alt="New asset"
+                                className="w-full h-32 object-cover rounded border-2 border-blue-500"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

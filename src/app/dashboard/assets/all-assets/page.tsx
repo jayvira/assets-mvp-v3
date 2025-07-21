@@ -148,8 +148,8 @@ function AllAssetsContent() {
     
     return matchesSearch && matchesTags && matchesFileType && matchesStatus && matchesSite;
   }).sort((a: any, b: any) => {
-    const dateA = new Date(a.dateModified).getTime();
-    const dateB = new Date(b.dateModified).getTime();
+    const dateA = new Date(a.uploadedDate || a.created_at || a.dateModified).getTime();
+    const dateB = new Date(b.uploadedDate || b.created_at || b.dateModified).getTime();
     return sortDesc ? dateB - dateA : dateA - dateB;
   });
 
@@ -263,9 +263,9 @@ function AllAssetsContent() {
             <button
               className="flex items-center gap-1 text-sm text-gray-700 hover:text-black font-medium px-2 py-1 rounded transition-colors"
               onClick={() => setSortDesc((v) => !v)}
-              aria-label="Sort by date modified"
+              aria-label="Sort by date added"
             >
-              Date modified
+              Date added
               <span className="inline-block">
                 {sortDesc ? (
                   <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M8 11l-4-4h8l-4 4z" fill="currentColor"/></svg>
@@ -352,11 +352,11 @@ function AllAssetsContent() {
       {showAssetDetailModal && selectedAsset && (
         <AssetDetailModal
           asset={selectedAsset}
-          assets={assets}
-          currentIndex={assets.findIndex(a => a.id === selectedAsset.id)}
+          assets={filteredAssets}
+          currentIndex={filteredAssets.findIndex(a => a.id === selectedAsset.id)}
           onAssetChange={(newIndex) => {
-            if (newIndex >= 0 && newIndex < assets.length) {
-              setSelectedAsset(assets[newIndex]);
+            if (newIndex >= 0 && newIndex < filteredAssets.length) {
+              setSelectedAsset(filteredAssets[newIndex]);
             }
           }}
           open={showAssetDetailModal}
