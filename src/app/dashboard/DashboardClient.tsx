@@ -6,6 +6,7 @@ import { FaThLarge, FaList } from "react-icons/fa";
 import { CloseDefaultIcon } from "@/icons/CloseDefaultIcon";
 import { DeleteIcon } from "@/icons/DeleteIcon";
 import { DownloadIcon } from "@/icons/DownloadIcon";
+import { ImageIcon } from "@/icons/ImageIcon";
 
 export default function DashboardClient({ assets }) {
   const allTags = Array.from(new Set(assets.flatMap(asset => Array.isArray(asset.tags) ? asset.tags : [])));
@@ -142,6 +143,8 @@ export default function DashboardClient({ assets }) {
                       key={asset.id}
                       id={asset.id}
                       type={asset.fileType}
+                      format={asset.format}
+                      icon={ImageIcon}
                       name={asset.name}
                       url={asset.url}
                       isSelected={false}

@@ -54,12 +54,7 @@ export function DashboardNav() {
       style={{ height: '58px' }}
     >
       <div 
-        className="flex items-center justify-between h-full"
-        style={{ 
-          maxWidth: '1280px',
-          margin: '0 auto',
-          padding: '0 var(--space-lg)'
-        }}
+        className="flex items-center justify-between h-full px-6"
       >
         {/* Left side - Logo and Tabs */}
         <div className="flex items-center space-x-6">
@@ -88,7 +83,7 @@ export function DashboardNav() {
           </div>
         </div>
 
-        {/* Right side - Theme Switcher, Notifications, Avatar, Account */}
+        {/* Right side - Theme Switcher, Notifications, Avatar */}
         <div className="flex items-center space-x-3">
           {/* Theme Switcher Button */}
           <Button 
@@ -106,17 +101,13 @@ export function DashboardNav() {
             <NotificationsIcon size={16} />
           </Button>
           
-          {/* Avatar */}
+          {/* Web Designer Avatar */}
           <Avatar 
             size="md" 
-            fallback="JD"
+            src="https://images.unsplash.com/photo-1607990283143-e81e7a2c9349?q=80&w=2641&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            fallback="WD"
+            className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold"
           />
-          
-          {/* Account Button */}
-          <Button variant="ghost" size="compact" className="flex items-center gap-1">
-            Account
-            <ChevronSmallDownIcon size={12} />
-          </Button>
         </div>
       </div>
     </nav>

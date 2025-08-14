@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Modal, ModalContent } from '@/components/spring-ui/modal';
 import AssetDetailPanel from './AssetDetailPanel';
+import { MainDocsIcon } from '@/icons/MainDocsIcon';
 
 interface AssetCardProps {
   id: number;
@@ -17,9 +18,10 @@ interface AssetCardProps {
   onSelect?: (selected: boolean) => void;
   selectable?: boolean;
   assetUrl?: string; // Add real asset URL
+  format?: string; // Add format from Supabase
 }
 
-const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, onClick, isSelected, className, selected = false, onSelect, selectable = true, assetUrl }) => {
+const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, onClick, isSelected, className, selected = false, onSelect, selectable = true, assetUrl, format }) => {
   // Get placeholder image based on asset type
   const getPlaceholderImage = () => {
     switch (type) {
@@ -32,6 +34,14 @@ const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, 
       default:
         return 'https://placehold.co/400x400/e2e8f0/64748b?text=Asset';
     }
+  };
+
+  // Check if asset is a document based on Supabase format
+  const isDocument = () => {
+    return format?.toLowerCase() === 'document' || 
+           format?.toLowerCase().includes('pdf') ||
+           format?.toLowerCase().includes('doc') ||
+           type === 'documents';
   };
 
   const [hovered, setHovered] = useState(false);
@@ -78,11 +88,40 @@ const AssetCard: React.FC<AssetCardProps> = ({ id, type, icon: Icon, name, url, 
         }}
       >
         <div className="w-full h-full flex items-center justify-center">
-          <img 
-            src={assetUrl || url || getPlaceholderImage()} 
-            alt={name}
-            className="max-w-full max-h-full object-contain"
-          />
+          {isDocument() ? (
+            <div className="w-full h-full relative">
+              {/* White background area positioned 24px from left, top, and right, extending to bottom */}
+              <div 
+                className="absolute bg-white shadow-sm flex items-center justify-center"
+                style={{
+                  left: '24px',
+                  top: '24px',
+                  right: '24px',
+                  bottom: '0px',
+                  borderTopLeftRadius: '12px',
+                  borderTopRightRadius: '12px',
+                  borderBottomLeftRadius: '0px',
+                  borderBottomRightRadius: '0px'
+                }}
+              >
+                <MainDocsIcon 
+                  size={64} 
+                  className="text-gray-600" 
+                  style={{ 
+                    minWidth: '64px', 
+                    minHeight: '64px',
+                    flexShrink: 0 
+                  }} 
+                />
+              </div>
+            </div>
+          ) : (
+            <img 
+              src={assetUrl || url || getPlaceholderImage()} 
+              alt={name}
+              className="max-w-full max-h-full object-contain"
+            />
+          )}
         </div>
         {/* Checkbox on hover or if selected - only show if selectable */}
         {selectable && (hovered || selected) && (

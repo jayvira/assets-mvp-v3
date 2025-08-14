@@ -2,12 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AISparkleIcon } from '@/icons/AISparkleIcon';
-import { CommentIcon } from '@/icons/CommentIcon';
-import { VariableIcon } from '@/icons/VariableIcon';
 import { WarningTriangleIcon } from '@/icons/WarningTriangleIcon';
 import { Badge } from '@/components/spring-ui/badge';
-import { AIToolCard } from '@/components/dashboard/ai-tool-card';
 import AssetCard from '@/components/designer/layout/panels/leftpanel/AssetCard';
 import ProjectCard from '@/components/dashboard/project-card';
 import { ImageIcon, UploadIcon, AddIcon } from '@/icons';
@@ -17,11 +13,9 @@ import { getAllAssets, getAssetsForSite, getAssetCountForSite, getPreviewImagesF
 
 export default function AssetsOverviewPage() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
   const [assets, setAssets] = useState<any[]>([]);
   const [projectsData, setProjectsData] = useState<any[]>([]);
   const [topPerformingAssets, setTopPerformingAssets] = useState<any[]>([]);
-  const [needsReviewAssets, setNeedsReviewAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch assets and projects data
@@ -78,19 +72,11 @@ export default function AssetsOverviewPage() {
         }
 
         setTopPerformingAssets(topAssets);
-
-        // Get assets that need review
-        const needsReview = allAssets
-          .filter((asset: any) => asset.status === 'Needs Review')
-          .sort((a: any, b: any) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime())
-          .slice(0, 5);
-        setNeedsReviewAssets(needsReview);
       } catch (error) {
         console.error('Error fetching data:', error);
         setAssets([]);
         setProjectsData([]);
         setTopPerformingAssets([]);
-        setNeedsReviewAssets([]);
       } finally {
         setLoading(false);
       }
@@ -121,78 +107,6 @@ export default function AssetsOverviewPage() {
         </div>
       </div>
 
-      {/* AI Chat Input and Tools Section */}
-      <div className="pt-4 space-y-4">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <AISparkleIcon size={16} className="text-[var(--text-secondary)]" />
-          </div>
-          <input
-            type="text"
-            placeholder="Use AI to generate images, find assets, or get recommendations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && searchQuery.trim()) {
-                console.log('AI Chat submitted:', searchQuery);
-                setSearchQuery('');
-              }
-            }}
-            className="w-full pl-10 pr-12 py-3 border border-[var(--border-default)] rounded-lg bg-[var(--background-primary)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent flex items-center"
-          />
-          <button
-            onClick={() => {
-              if (searchQuery.trim()) {
-                console.log('AI Chat submitted:', searchQuery);
-                setSearchQuery('');
-              }
-            }}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          <AIToolCard
-            title="Create"
-            description="Generate images with your styles and brand guidelines."
-            icon={<AISparkleIcon size={20} className="text-white" />}
-            iconBgColor="bg-blue-500"
-            onClick={() => router.push('/dashboard/assets/create')}
-            onOpenClick={() => router.push('/dashboard/assets/create')}
-          />
-          
-          <AIToolCard
-            title="Edit"
-            description="Modify style, backgrounds and more."
-            icon={<img src="https://cdn.prod.website-files.com/687d379371b4f02fa4f58460/687d5cb32b208d4435d0b0ca_icon_AIEdit.svg" alt="AI Edit" className="w-5 h-5 filter brightness-0 invert" />}
-            iconBgColor="bg-purple-500"
-            onOpenClick={() => console.log('Open Image Editor')}
-          />
-          
-          <AIToolCard
-            title="Chat"
-            description="Work with our AI to generate images or get recommendations based on your unique needs."
-            icon={<CommentIcon size={20} className="text-white" />}
-            iconBgColor="bg-green-500"
-            onClick={() => router.push('/dashboard/assets/create')}
-            onOpenClick={() => router.push('/dashboard/assets/create')}
-          />
-          
-          <AIToolCard
-            title="Train & Guide"
-            description="Teach AI to work within your brand guidelines and goals."
-            icon={<VariableIcon size={20} className="text-white" />}
-            iconBgColor="bg-gray-600"
-            onClick={() => router.push('/dashboard/assets/guidelines')}
-            onOpenClick={() => router.push('/dashboard/assets/guidelines')}
-          />
-        </div>
-      </div>
-
       {/* Projects Section */}
       <div className="pt-4">
         <div className="flex items-center justify-between mb-6">
@@ -212,6 +126,49 @@ export default function AssetsOverviewPage() {
               assetCount={project.assetCount}
               previewImages={project.previewImages}
               onClick={() => router.push(`/dashboard/assets/all-assets?site=${project.site.id}`)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Recently Added Assets Section */}
+      <div className="pt-4">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Recently Added</h3>
+          <button
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            onClick={() => router.push('/dashboard/assets/all-assets')}
+          >
+            View all
+          </button>
+        </div>
+        <div className="grid grid-cols-5 gap-4">
+          {/* Add Image Card */}
+          <div className="h-full border-2 border-dashed border-[var(--border-default)] rounded-lg flex flex-col items-center justify-center p-6 bg-[var(--background-secondary)] hover:bg-[var(--background-tertiary)] transition-colors cursor-pointer">
+            <div className="w-full flex flex-col gap-2 justify-center">
+              <Button
+                variant="outline"
+                size="compact"
+                className="w-full"
+                onClick={() => console.log('Upload clicked')}
+              >
+                <UploadIcon size={16} className="mr-2" />
+                Upload
+              </Button>
+            </div>
+          </div>
+          
+          {recentAssets.map((asset: any) => (
+            <AssetCard
+              key={asset.id}
+              id={asset.id}
+              type={asset.type}
+              format={asset.format}
+              icon={ImageIcon}
+              name={asset.name}
+              url={asset.url}
+              isSelected={false}
+              onClick={() => console.log('Asset clicked:', asset.name)}
             />
           ))}
         </div>
@@ -311,91 +268,6 @@ export default function AssetsOverviewPage() {
           ))}
         </div>
       </div>
-      </div>
-
-      {/* Recently Added Assets Section */}
-      <div className="pt-4">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Recently Added</h3>
-          <button
-            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-            onClick={() => router.push('/dashboard/assets/all-assets')}
-          >
-            View all
-          </button>
-        </div>
-        <div className="grid grid-cols-5 gap-4">
-          {/* Add Image Card */}
-          <div className="h-full border-2 border-dashed border-[var(--border-default)] rounded-lg flex flex-col items-center justify-center p-6 bg-[var(--background-secondary)] hover:bg-[var(--background-tertiary)] transition-colors cursor-pointer">
-            <div className="w-full flex flex-col gap-2 justify-center">
-              <Button
-                variant="outline"
-                size="compact"
-                className="w-full"
-                onClick={() => console.log('Upload clicked')}
-              >
-                <UploadIcon size={16} className="mr-2" />
-                Upload
-              </Button>
-              <Button
-                variant="outline"
-                size="compact"
-                className="w-full"
-                onClick={() => console.log('Create clicked')}
-              >
-                <AddIcon size={16} className="mr-2" />
-                Create
-              </Button>
-            </div>
-          </div>
-          
-          {recentAssets.map((asset: any) => (
-            <AssetCard
-              key={asset.id}
-              id={asset.id}
-              type={asset.type}
-              icon={ImageIcon}
-              name={asset.name}
-              url={asset.url}
-              isSelected={false}
-              onClick={() => console.log('Asset clicked:', asset.name)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Needs Review Assets Section */}
-      <div className="pt-4">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Needs Review</h3>
-          <button
-            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-            onClick={() => router.push('/dashboard/assets/all-assets?status=needs-review')}
-          >
-            View all
-          </button>
-        </div>
-        <div className="grid grid-cols-5 gap-4">
-          {needsReviewAssets.length > 0 ? (
-            needsReviewAssets.map((asset: any) => (
-              <AssetCard
-                key={asset.id}
-                id={asset.id}
-                type={asset.type}
-                icon={ImageIcon}
-                name={asset.name}
-                url={asset.url}
-                isSelected={false}
-                onClick={() => console.log('Asset clicked:', asset.name)}
-              />
-            ))
-          ) : (
-            // Empty state
-            <div className="col-span-5 text-center py-8">
-              <p className="text-[var(--text-secondary)]">No assets need review</p>
-            </div>
-          )}
-        </div>
       </div>
 
     </div>

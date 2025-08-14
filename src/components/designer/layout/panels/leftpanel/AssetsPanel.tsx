@@ -80,6 +80,13 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
 
+  // Set webkitdirectory attribute on the file input
+  useEffect(() => {
+    if (fileInputRef.current) {
+      fileInputRef.current.setAttribute('webkitdirectory', '');
+    }
+  }, []);
+
   // Fetch assets from Supabase on component mount
   useEffect(() => {
     const fetchAssets = async () => {

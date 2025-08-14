@@ -8,7 +8,7 @@ import { TabBar, TabBarItem } from '@/components/spring-ui/tab-bar';
 import { TabNewIcon } from '@/icons/TabNewIcon';
 import { IconButton } from '@/components/spring-ui/icon-button';
 import { DuplicateFillIcon } from '@/icons/DuplicateFillIcon';
-import { AISparkleIcon } from '@/icons/AISparkleIcon';
+import { SitesStackIcon } from '@/icons/SitesStackIcon';
 import { BuyIcon } from '@/icons/BuyIcon';
 import { Button } from '@/components/spring-ui/button';
 import { MoreIcon } from '@/icons/MoreIcon';
@@ -21,9 +21,23 @@ import {
 import { ArchiveIcon } from '@/icons/ArchiveIcon';
 import { ChevronLargeLeftIcon } from '@/icons';
 import { ChevronLargeRightIcon } from '@/icons';
+import { ChevronLargeDownIcon } from '@/icons';
 import { TagPill } from '@/components/TagPill';
+import { Row } from '@/components/spring-ui/row';
+import { DownloadIcon } from '@/icons/DownloadIcon';
+import { TimeIcon } from '@/icons/TimeIcon';
+import { UndoIcon } from '@/icons/UndoIcon';
+import { EditIcon } from '@/icons/EditIcon';
+import { UploadIcon } from '@/icons/UploadIcon';
+import { AddIcon } from '@/icons/AddIcon';
+import { ImageIcon } from '@/icons/ImageIcon';
+import { BrushIcon } from '@/icons/BrushIcon';
+import { MainDocsIcon } from '@/icons/MainDocsIcon';
+import { VideoIcon } from '@/icons/VideoIcon';
 import { supabase } from '@/lib/supabase';
 import AssetVariantsToolbar from './AssetVariantsToolbar';
+import RelatedAssetsSection from './RelatedAssetsSection';
+import VersionCard from './VersionCard';
 import { getSiteNameById } from '@/config/sites';
 import { InsightsIcon } from '@/icons/InsightsIcon';
 import { PerformanceIcon } from '@/icons/PerformanceIcon';
@@ -51,6 +65,17 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
   const [selectedVariantId, setSelectedVariantId] = React.useState<string>('');
   const [asset56Data, setAsset56Data] = React.useState<any>(null);
   const [displayedImageUrl, setDisplayedImageUrl] = React.useState<string>('');
+  const [showSimilarAssets, setShowSimilarAssets] = React.useState<boolean>(false);
+  const [selectedVersionId, setSelectedVersionId] = React.useState<string>('');
+  
+  // Initialize selectedVersionId immediately when asset is available
+  React.useEffect(() => {
+    if (asset?.id && !selectedVersionId) {
+      const currentVersionId = `current-${asset.id}`;
+      console.log('Immediate initialization - Setting current version as selected:', currentVersionId);
+      setSelectedVersionId(currentVersionId);
+    }
+  }, [asset?.id, selectedVersionId]);
 
   // Function to save asset changes to Supabase
   const saveAssetChanges = async (updates: any) => {
@@ -94,6 +119,19 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, assets, currentIndex, onAssetChange]);
 
+  // Keyboard shortcut to close modal with Escape key
+  React.useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange(false);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onOpenChange]);
+
   React.useEffect(() => {
     if (asset) {
       const initialName = getFilename(asset);
@@ -123,6 +161,11 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
       // Set the displayed image URL to the current asset's URL
       setDisplayedImageUrl(asset.url);
       
+      // Set the current version as selected by default
+      const currentVersionId = `current-${asset.id}`;
+      console.log('Setting current version as selected:', currentVersionId);
+      setSelectedVersionId(currentVersionId);
+      
       // Fetch asset 56 if we're viewing asset 62
       if (asset.id === 62 && !asset56Data) {
         fetchAsset56();
@@ -148,6 +191,11 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
     } catch (error) {
       console.error('Error fetching asset 56:', error);
     }
+  };
+
+  // Version selection logic
+  const handleVersionSelect = (versionId: string) => {
+    setSelectedVersionId(versionId);
   };
 
   if (!asset) return null;
@@ -237,6 +285,59 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
     }
   };
 
+  // Function to get file type icon based on asset format
+  const getFileTypeIcon = (asset: any) => {
+    const format = asset.format?.toLowerCase() || '';
+    const type = asset.type?.toLowerCase() || '';
+    
+    // Check for images
+    if (format.includes('jpg') || format.includes('jpeg') || format.includes('png') || 
+        format.includes('gif') || format.includes('webp') || format.includes('bmp') ||
+        format.includes('tiff') || type === 'images') {
+      return ImageIcon;
+    }
+    
+    // Check for videos
+    if (format.includes('mp4') || format.includes('mov') || format.includes('avi') || 
+        format.includes('wmv') || format.includes('webm') || format.includes('mkv') ||
+        type === 'videos') {
+      return VideoIcon;
+    }
+    
+    // Check for vector/illustrator files
+    if (format.includes('ai') || format.includes('svg') || format.includes('eps') || 
+        format.includes('vector') || format.includes('illustrator')) {
+      return BrushIcon;
+    }
+    
+    // Check for documents
+    if (format.includes('pdf') || format.includes('doc') || format.includes('docx') || 
+        format.includes('txt') || format.includes('rtf') || format.includes('xls') ||
+        format.includes('xlsx') || format.includes('ppt') || format.includes('pptx') ||
+        type === 'documents') {
+      return MainDocsIcon;
+    }
+    
+    // Default to image icon for unknown types
+    return ImageIcon;
+  };
+
+  // Function to check if asset is a PDF
+  const isPDF = (asset: any) => {
+    const format = asset.format?.toLowerCase() || '';
+    const name = asset.name?.toLowerCase() || '';
+    return format.includes('pdf') || name.endsWith('.pdf');
+  };
+
+  // Function to check if asset is an image
+  const isImage = (asset: any) => {
+    const format = asset.format?.toLowerCase() || '';
+    const type = asset.type?.toLowerCase() || '';
+    return format.includes('jpg') || format.includes('jpeg') || format.includes('png') || 
+           format.includes('gif') || format.includes('webp') || format.includes('bmp') ||
+           format.includes('tiff') || type === 'images';
+  };
+
   // Function to get filename without extension
   const getFilename = (asset: any) => {
     if (asset.name) {
@@ -244,6 +345,91 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
       return lastDotIndex > 0 ? asset.name.substring(0, lastDotIndex) : asset.name;
     }
     return asset.name || 'Unknown';
+  };
+
+  // Generate mock version history
+  const generateVersionHistory = (currentAsset: any) => {
+    const currentVersion = currentAsset.version || 'V3';
+    const versionNumber = parseInt(currentVersion.replace('V', '')) || 3;
+    
+    const versions = [];
+    for (let i = versionNumber; i >= 1; i--) {
+      const version = {
+        id: `v${i}`,
+        version: `V${i}`,
+        fileName: i === versionNumber ? currentAsset.name : `${currentAsset.name.replace(/\.[^/.]+$/, '')}_v${i}${currentAsset.name.match(/\.[^/.]+$/)?.[0] || ''}`,
+        fileSize: i === versionNumber ? currentAsset.fileSize : `${(Math.random() * 500 + 100).toFixed(1)} KB`,
+        uploadedBy: i === versionNumber ? (currentAsset.uploadedBy || 'Current User') : ['John Doe', 'Jane Smith', 'Mike Johnson'][Math.floor(Math.random() * 3)],
+        uploadedDate: new Date(Date.now() - (versionNumber - i) * 24 * 60 * 60 * 1000 * Math.random() * 30).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        notes: i === versionNumber ? 'Current version' : [
+          'Initial upload',
+          'Fixed compression issues',
+          'Updated for better quality',
+          'Color correction applied',
+          'Cropped to better fit layout',
+          'Optimized file size'
+        ][Math.floor(Math.random() * 6)],
+        isCurrent: i === versionNumber,
+        url: currentAsset.url // In a real app, this would be version-specific URLs
+      };
+      versions.push(version);
+    }
+    
+    return versions;
+  };
+
+  // Handle version actions
+  const handleRestoreVersion = async (versionId: string) => {
+    console.log('Restoring version:', versionId);
+    // In a real app, this would restore the version
+  };
+
+  const handleDownloadVersion = (version: any) => {
+    console.log('Downloading version:', version);
+    // In a real app, this would trigger download
+  };
+
+  const handleDeleteVersion = async (versionId: string) => {
+    console.log('Deleting version:', versionId);
+    // In a real app, this would delete the version
+  };
+
+  // Function to generate related assets based on current asset
+  const generateRelatedAssets = (currentAsset: any) => {
+    // Mock related assets - in a real app, this would query the database
+    // based on tags, format, dimensions, or AI similarity analysis
+    const mockRelatedAssets = [
+      {
+        id: 'similar-1',
+        name: `${currentAsset.name?.split('.')[0] || 'Asset'}_variant_01.${currentAsset.format?.toLowerCase() || 'jpg'}`,
+        url: currentAsset.url || 'https://placehold.co/400x400/e2e8f0/64748b?text=Similar+1',
+        fileSize: '2.4 MB',
+        format: currentAsset.format || 'JPG',
+        similarity: 89
+      },
+      {
+        id: 'similar-2',
+        name: `${currentAsset.name?.split('.')[0] || 'Asset'}_alternative.${currentAsset.format?.toLowerCase() || 'jpg'}`,
+        url: currentAsset.url || 'https://placehold.co/400x400/e2e8f0/64748b?text=Similar+2',
+        fileSize: '1.8 MB',
+        format: currentAsset.format || 'JPG',
+        similarity: 76
+      },
+      {
+        id: 'similar-3',
+        name: `${currentAsset.name?.split('.')[0] || 'Asset'}_related.${currentAsset.format?.toLowerCase() || 'jpg'}`,
+        url: currentAsset.url || 'https://placehold.co/400x400/e2e8f0/64748b?text=Similar+3',
+        fileSize: '3.1 MB',
+        format: currentAsset.format || 'JPG',
+        similarity: 65
+      }
+    ];
+
+    return mockRelatedAssets;
   };
 
   const renderTabContent = () => {
@@ -322,39 +508,36 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
             <div>
               <h3 className="text-black/60 mb-1">Uploaded</h3>
               <p className="text-sm text-gray-900">
-                {asset.uploadedDate ? new Date(asset.uploadedDate).toLocaleDateString() : 'Unknown'}
+                {asset.uploadedDate ? new Date(asset.uploadedDate).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric' 
+                }) : 'Unknown'}
                 {asset.uploadedBy ? ` by ${asset.uploadedBy}` : ''}
               </p>
             </div>
             <div>
               <h3 className="text-black/60 mb-1">Last modified</h3>
               <p className="text-sm text-gray-900">
-                {asset.dateModified ? new Date(asset.dateModified).toLocaleDateString() : 'Unknown'}
+                {asset.dateModified ? new Date(asset.dateModified).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric' 
+                }) : 'Unknown'}
                 {asset.uploadedBy ? ` by ${asset.uploadedBy}` : ''}
               </p>
             </div>
-            <div>
-              <h3 className="text-black/60 mb-1">Status</h3>
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: getStatusColor(asset.status) }}
-                ></div>
-                <span className="text-sm text-gray-900">
-                  {asset.status || 'No status'}
-                </span>
-              </div>
-            </div>
+
             <>
               <hr className="border-t border-gray-200 mt-2 mb-6" style={{ marginBottom: '24px' }} />
               {/* Custom Tag Input */}
-              <div className="flex items-center gap-2 mb-4">
-                <BuyIcon className="w-6 h-6 text-gray-400" />
-                <Input
-                  type="text"
-                  value={customTag}
-                  onChange={e => setCustomTag(e.target.value)}
-                                      onKeyDown={e => {
+                              <div className="flex items-center gap-2 mb-4">
+                  <BuyIcon className="w-6 h-6 text-gray-400" />
+                  <Input
+                    type="text"
+                    value={customTag}
+                    onChange={e => setCustomTag(e.target.value)}
+                    onKeyDown={e => {
                       if (e.key === 'Enter' && customTag.trim()) {
                         if (!selectedTags.includes(customTag.trim())) {
                           const newTags = [...selectedTags, customTag.trim()];
@@ -363,13 +546,13 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                         setCustomTag('');
                       }
                     }}
-                  placeholder="Add tags"
-                  className="flex-1 shadow-none"
-                />
-              </div>
-              {/* End Custom Tag Input */}
-              <div className="flex items-center gap-2">
-                <AISparkleIcon className="w-4 h-4 text-gray-400" />
+                    placeholder="Add tags"
+                    className="flex-1 shadow-none"
+                  />
+                </div>
+                {/* End Custom Tag Input */}
+                <div className="flex items-center gap-2">
+                  <SitesStackIcon className="w-4 h-4 text-gray-400" />
                 {originalTags.length > 0 ? (
                   originalTags.map((tag: string) => (
                     <TagPill
@@ -504,102 +687,127 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
               </div>
             </div>
 
-            {/* Usage Analytics */}
-            <div>
-              <h3 className="text-black/60 mb-3 font-medium">Usage Analytics</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 flex items-center justify-center">
-                      <VisibleIcon className="w-4 h-4 text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-900">Total Views</p>
-                      <p className="text-xs text-gray-500">Last 30 days</p>
-                    </div>
-                  </div>
-                  <p className="text-base font-bold text-gray-900">2.4K</p>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 flex items-center justify-center">
-                      <InsightsIcon className="w-4 h-4 text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-900">Conversion Rate</p>
-                      <p className="text-xs text-gray-500">Click-through rate</p>
-                    </div>
-                  </div>
-                  <p className="text-base font-bold text-gray-900">3.2%</p>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 flex items-center justify-center">
-                      <PerformanceIcon className="w-4 h-4 text-gray-600" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-gray-900">Performance Trend</p>
-                      <p className="text-xs text-gray-500">vs last month</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-green-600 text-xs">↗</span>
-                    <p className="text-base font-bold text-green-600">+12%</p>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-                        {/* Asset Recommendations - Hidden for Asset 62 */}
-            {asset.id !== 62 && (
-              <div>
-                <h3 className="text-black/60 mb-3 font-medium">Recommendations</h3>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-xs font-medium text-blue-900">Optimize for mobile</p>
-                      <p className="text-xs text-blue-700 mt-1">Consider creating a mobile-optimized version for better performance</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div>
-                      <p className="text-xs font-medium text-yellow-900">Add alt text</p>
-                      <p className="text-xs text-yellow-700 mt-1">Improve accessibility by adding descriptive alt text</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+
+
 
 
           </div>
         );
       case 'versions':
+        const versionHistory = generateVersionHistory(asset);
         return (
-          <div className="space-y-5">
+          <div className="space-y-6">
+            {/* Current Version */}
             <div>
-              <h3 className="text-black/60 mb-1">Current Version</h3>
-              <p className="text-sm text-gray-900">{asset.version || 'V1'}</p>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-black/60">Current Version</h3>
+                <IconButton
+                  variant="ghost"
+                  size="compact"
+                  aria-label="Add new version"
+                >
+                  <AddIcon size={16} />
+                </IconButton>
+              </div>
+              <VersionCard
+                id={`current-${asset.id}`}
+                version="V3"
+                fileName={asset.name || 'Asset'}
+                fileSize={asset.fileSize || 'Unknown size'}
+                uploadedBy={asset.uploadedBy || 'Current User'}
+                uploadedDate={asset.uploadedDate 
+                  ? new Date(asset.uploadedDate).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })
+                  : new Date().toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })
+                }
+                notes="Current version"
+                url={asset.url}
+                isCurrent={true}
+                showCurrentBadge={false}
+                isSelected={selectedVersionId === `current-${asset.id}`}
+                onSelect={() => handleVersionSelect(`current-${asset.id}`)}
+              />
             </div>
+
+            {/* Older Versions */}
             <div>
-              <h3 className="text-black/60 mb-1">Version History</h3>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <span className="text-sm font-medium">{asset.version || 'V1'}</span>
-                </div>
+              <h3 className="text-black/60 mb-3">Older versions</h3>
+              <div className="space-y-3">
+                {/* Always show at least 2 mock previous versions for demonstration */}
+                <VersionCard
+                  id="v2-demo"
+                  version="V2"
+                  fileName={asset.name || 'Asset'}
+                  fileSize="2.1 MB"
+                  uploadedBy="Jane Smith"
+                  uploadedDate="Jan 15, 2025"
+                  notes="Updated color correction and brightness"
+                  url={asset.url}
+                  isCurrent={false}
+                  isSelected={selectedVersionId === "v2-demo"}
+                  onSelect={() => handleVersionSelect("v2-demo")}
+                  onClick={() => {
+                    console.log('Selected version: V2');
+                  }}
+                />
+                <VersionCard
+                  id="v1-demo"
+                  version="V1"
+                  fileName={asset.name || 'Asset'}
+                  fileSize="2.8 MB"
+                  uploadedBy="John Doe"
+                  uploadedDate="Dec 20, 2024"
+                  notes="Initial upload"
+                  url={asset.url}
+                  isCurrent={false}
+                  isSelected={selectedVersionId === "v1-demo"}
+                  onSelect={() => handleVersionSelect("v1-demo")}
+                  onClick={() => {
+                    console.log('Selected version: V1');
+                  }}
+                />
               </div>
             </div>
-            <div>
-              <h3 className="text-black/60 mb-1">Upload New Version</h3>
-              <button className="w-full px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors">
-                Choose File
-              </button>
-            </div>
+
+            {/* Version Comparison */}
+            {versionHistory.length > 1 && (
+              <div>
+                <h3 className="text-black/60 mb-3">Compare Versions</h3>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-600 mb-1">From</label>
+                    <select className="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                      {versionHistory.map((version) => (
+                        <option key={version.id} value={version.id}>
+                          {version.version}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-600 mb-1">To</label>
+                    <select className="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+                      {versionHistory.map((version) => (
+                        <option key={version.id} value={version.id}>
+                          {version.version}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <Button variant="outline" size="compact" className="w-full mt-2">
+                  Compare Versions
+                </Button>
+              </div>
+            )}
           </div>
         );
       default:
@@ -615,6 +823,10 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
           {/* Custom Modal Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
             <div className="flex items-center gap-3">
+              {React.createElement(getFileTypeIcon(asset), { 
+                size: 20, 
+                className: "text-gray-600 flex-shrink-0" 
+              })}
               <h2 className="text-lg font-semibold text-gray-900">{filename}</h2>
               <Badge variant="default" size="comfort" shape="square">
                 {getFileType(asset)}
@@ -642,10 +854,10 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
               <IconButton variant="outline" aria-label="Share">
                 <ShareIcon size={16} />
               </IconButton>
-              <Button variant="outline">
-                <AISparkleIcon size={16} className="mr-1" />
-                Edit
-              </Button>
+                              <Button variant="outline">
+                  <SitesStackIcon size={16} className="mr-1" />
+                  Edit
+                </Button>
               <Button variant="primary">Download</Button>
               <IconButton variant="ghost" aria-label="Close" onClick={() => onOpenChange(false)}>
                 <CloseDefaultIcon size={20} />
@@ -657,7 +869,7 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
           <div className="flex-1 flex flex-col">
             
             <div className="flex flex-1">
-              {/* Asset Variants Toolbar */}
+              {/* Asset Variants Toolbar - Hidden for now, keeping code for future use
               <AssetVariantsToolbar
                 variants={assetVariants}
                 selectedVariantId={selectedVariantId}
@@ -680,12 +892,19 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                   // Handle adding new variant
                 }}
               />
+              */}
               
-              {/* Left Column - Large Image */}
+              {/* Center Column - Large Image */}
               <div className="flex-1 flex flex-col items-center justify-center relative">
+                {/* Related Assets Section - Positioned relative to asset focus view */}
+                <RelatedAssetsSection
+                  relatedAssets={generateRelatedAssets(asset)}
+                  isExpanded={showSimilarAssets}
+                  onToggleExpanded={() => setShowSimilarAssets(!showSimilarAssets)}
+                />
                 <div 
                   className="asset-image-wrapper flex items-center justify-center overflow-hidden px-10 h-full w-full flex-1"
-                  style={{
+                  style={isPDF(asset) ? {} : {
                     backgroundImage: `
                       linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
                       linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
@@ -696,12 +915,28 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                     backgroundPosition: '0 0, 0 6px, 6px -6px, -6px 0px'
                   }}
                 >
-                  <img 
-                    src={displayedImageUrl || asset.url}
-                    alt={asset.name}
-                    className="object-contain w-auto h-auto"
-                    style={{ maxWidth: 'calc(100% - 80px)', maxHeight: 'calc(100vh - 200px)' }}
-                  />
+                  {isPDF(asset) ? (
+                    <iframe
+                      src={displayedImageUrl || asset.url}
+                      title={asset.name}
+                      className="w-full h-full border-0 rounded-lg shadow-lg"
+                      style={{ 
+                        width: 'calc(100% - 80px)', 
+                        height: 'calc(100vh - 200px)',
+                        minHeight: '600px'
+                      }}
+                      onError={() => {
+                        console.error('PDF failed to load in iframe');
+                      }}
+                    />
+                  ) : (
+                    <img 
+                      src={displayedImageUrl || asset.url}
+                      alt={asset.name}
+                      className="object-contain w-auto h-auto"
+                      style={{ maxWidth: 'calc(100% - 80px)', maxHeight: 'calc(100vh - 200px)' }}
+                    />
+                  )}
                 </div>
                 {/* Navigation Toolbar */}
                 {Array.isArray(assets) && typeof currentIndex === 'number' && assets.length > 1 && (
@@ -739,9 +974,8 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                 <TabBar value={activeTab} onValueChange={setActiveTab} className="px-4">
                   <TabBarItem value="details" className="px-2">Details</TabBarItem>
                   <TabBarItem value="site-usage" className="px-2">Insights</TabBarItem>
-                  <TabBarItem value="versions" className="px-2 flex items-center gap-2">
+                  <TabBarItem value="versions" className="px-2">
                     Versions
-                    <Badge size="compact" variant="default" className="ml-1 text-[10px] text-black" style={{ backgroundColor: '#E8E8E8' }}>{asset.version || "V1"}</Badge>
                   </TabBarItem>
                 </TabBar>
                 
@@ -758,4 +992,4 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
   );
 };
 
-export default AssetDetailModal; 
+export default AssetDetailModal;  

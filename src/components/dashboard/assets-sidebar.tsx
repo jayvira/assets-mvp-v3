@@ -11,6 +11,14 @@ import {
   PerformanceIcon,
   VariableIcon,
   AISparkleIcon,
+  ArrowLeftIcon,
+  SettingsAltIcon, 
+  UsersIcon, 
+  UpgradeIcon, 
+  PaymentIcon, 
+  AppsIcon, 
+  TemplatesIcon,
+  ArchiveIcon,
 } from "@/icons";
 import { useState } from "react";
 import { useRouter, usePathname } from 'next/navigation';
@@ -18,12 +26,16 @@ import { useRouter, usePathname } from 'next/navigation';
 const mainNavItems = [
   { name: "Overview", id: "overview", icon: HomeIcon, href: "/dashboard/assets/overview" },
   { name: "All assets", id: "all-assets", icon: AssetManager24Icon, href: "/dashboard/assets/all-assets" },
-  { name: "Create", id: "images", icon: AISparkleIcon, href: "/dashboard/assets/create" },
-  { name: "Insights", id: "insights", icon: PerformanceIcon, href: "/dashboard/assets/insights" },
-  { name: "Guidelines", id: "brand-guidelines", icon: VariableIcon, href: "/dashboard/assets/guidelines" },
+  { name: "Archived", id: "archived", icon: ArchiveIcon, href: "/dashboard/assets/archived" },
 ];
 
-
+const settingsItems = [
+  { name: "General", id: "general", icon: SettingsAltIcon },
+  { name: "Plans", id: "plans", icon: UpgradeIcon },
+  { name: "Billing", id: "billing", icon: PaymentIcon },
+  { name: "Apps & integrations", id: "apps-integrations", icon: AppsIcon },
+  { name: "Libraries & templates", id: "libraries-templates", icon: TemplatesIcon },
+];
 
 const workspaces = [
   { name: "My Workspace", current: true },
@@ -40,12 +52,16 @@ export function AssetsSidebar({}: AssetsSidebarProps) {
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const currentWorkspace = workspaces.find(w => w.current) || workspaces[0];
 
+  const handleDashboardClick = () => {
+    router.push('/dashboard');
+  };
+
   return (
     <aside 
-      className="h-screen overflow-y-auto border-none bg-[var(--bg-secondary)]"
+      className="h-screen overflow-y-auto border-r border-[var(--border-default)] bg-white flex flex-col pb-10"
       style={{ width: '240px' }}
     >
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-4 flex-1">
         {/* Workspace Selector */}
         <div className="relative">
           <Button
@@ -88,8 +104,19 @@ export function AssetsSidebar({}: AssetsSidebarProps) {
           )}
         </div>
 
+        {/* Dashboard Back Navigation */}
+        <div className="mt-4 mb-6">
+          <button
+            className="w-full flex items-center px-3 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-raised)] rounded transition-colors"
+            onClick={handleDashboardClick}
+          >
+            <ArrowLeftIcon size={16} className="mr-2 text-[var(--text-secondary)]" />
+            <span>Dashboard</span>
+          </button>
+        </div>
+
         {/* Main Navigation */}
-        <div className="mt-10">
+        <div className="mt-6">
           {mainNavItems.map((item) => (
             <Row
               key={item.name}
@@ -106,8 +133,26 @@ export function AssetsSidebar({}: AssetsSidebarProps) {
             />
           ))}
         </div>
+      </div>
 
-
+      {/* Settings Section - Bottom */}
+      <div className="p-4 pb-10 border-t border-[var(--border-default)]">
+        <div className="px-3 py-2">
+          <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+            Settings
+          </span>
+        </div>
+        {settingsItems.map((item) => (
+          <Row
+            key={item.name}
+            label={item.name}
+            icon={<item.icon size={16} />}
+            selected={false}
+            size="compact"
+            className="cursor-pointer mb-1"
+            onClick={() => console.log(`${item.name} clicked`)}
+          />
+        ))}
       </div>
     </aside>
   );
