@@ -27,6 +27,7 @@ import PagesPanel from './panels/leftpanel/PagesPanel';
 import NavigatorPanel from './panels/leftpanel/NavigatorPanel';
 import AssetsPanel from './panels/leftpanel/AssetsPanel';
 import AssetDetailPanel from './panels/leftpanel/AssetDetailPanel';
+import AssetDetailModalDesigner from './panels/leftpanel/AssetDetailModalDesigner';
 
 // Define panel types
 type PanelType = 
@@ -56,6 +57,13 @@ type FullAssetItem = {
   uploadedDate: string;
   lastModifiedDate: string;
   url: string;
+  fileType?: string;
+  tags?: string[];
+  status?: string;
+  altText?: string;
+  width?: number;
+  height?: number;
+  version?: string;
 };
 
 // Add context for opening assets panel
@@ -93,6 +101,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }
   const [prevSelectedPage, setPrevSelectedPage] = useState(selectedPage);
   const [selectedAssetForDetail, setSelectedAssetForDetail] = useState<FullAssetItem | null>(null);
   const { openAssetsPanelNormal } = useSidebarPanel(); // Get the normal mode function
+  const [assetDetailModalOpen, setAssetDetailModalOpen] = useState(false);
+  const [selectedAssetForModal, setSelectedAssetForModal] = useState<any>(null);
 
   // Function to toggle panels
   const togglePanel = (panel: PanelType) => {
@@ -114,6 +124,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }
   // Handle asset selection from AssetsPanel
   const handleAssetSelected = (asset: FullAssetItem | null) => {
     setSelectedAssetForDetail(asset);
+  };
+
+  // Handle opening asset detail modal
+  const handleOpenAssetDetailModal = (asset: any) => {
+    console.log('LeftSidebar - Opening asset detail modal with asset:', asset);
+    console.log('LeftSidebar - Asset altText:', asset.altText);
+    setSelectedAssetForModal(asset);
+    setAssetDetailModalOpen(true);
   };
 
   // Effect to close Pages panel when a page is selected
@@ -322,16 +340,17 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }
             title="Assets" 
             isOpen={activePanel === 'assets'} 
             onClose={closePanel}
-            panelWidth={selectedAssetForDetail ? '800px' : '320px'}
+            panelWidth={'800px'}
             hideHeader={true}
           >
             <div className="flex h-full w-full">
-              <div className="flex-shrink-0 w-[320px] border-r border-[var(--border-default)]">
+              <div className="flex-shrink-0 w-full border-r border-[var(--border-default)]">
                 <AssetsPanel 
                   onAssetSelect={handleAssetSelected}
                   selectedAssetId={selectedAssetForDetail?.id || null}
                   onClose={closePanel}
                   isDetailPanelOpen={!!selectedAssetForDetail}
+                  onOpenAssetDetailModal={handleOpenAssetDetailModal}
                 />
               </div>
               {selectedAssetForDetail && (
@@ -349,6 +368,15 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }
       
       <Panel title="Apps" isOpen={activePanel === 'apps'} onClose={closePanel} />
       <Panel title="Activity Log" isOpen={activePanel === 'activityLog'} onClose={closePanel} />
+      
+      {/* Asset Detail Modal - Rendered outside Panel structure */}
+      {assetDetailModalOpen && selectedAssetForModal && (
+        <AssetDetailModalDesigner
+          open={assetDetailModalOpen}
+          onOpenChange={setAssetDetailModalOpen}
+          asset={selectedAssetForModal}
+        />
+      )}
     </div>
   );
 };

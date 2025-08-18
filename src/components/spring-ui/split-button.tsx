@@ -20,12 +20,14 @@ type SplitButtonVariants = Exclude<
 
 interface SplitButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "variant"> {
   children: React.ReactNode;
-  menuContent: React.ReactNode;
+  menuContent?: React.ReactNode;
   onButtonClick?: () => void;
+  onTriggerClick?: () => void;
   className?: string;
   menuClassName?: string;
   variant?: SplitButtonVariants;
   size?: VariantProps<typeof buttonVariants>["size"];
+  triggerIcon?: React.ReactNode;
 }
 
 export function SplitButton({
@@ -34,8 +36,10 @@ export function SplitButton({
   variant = "default",
   size = "comfortable",
   onButtonClick,
+  onTriggerClick,
   className,
   menuClassName,
+  triggerIcon,
   ...props
 }: SplitButtonProps) {
   return (
@@ -59,28 +63,46 @@ export function SplitButton({
         <div className="h-full w-[1px] bg-[var(--border-default)] -mx-px relative z-10"></div>
       )}
       
-      {/* Dropdown trigger */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <IconButton
-            variant={variant}
-            size={
-              size === "comfortable" ? "comfortable" : 
-              size === "compact" ? "compact" : 
-              size === "icon" ? "comfortable" : "comfortable"
-            }
-            aria-label="More options"
-            className={cn(
-              "rounded-l-none [.theme-designer_&]:h-6 [.theme-dashboard_&]:h-8"
-            )}
-          >
-            <ChevronSmallDownIcon />
-          </IconButton>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className={menuClassName}>
-          {menuContent}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Right side button or dropdown */}
+      {menuContent ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <IconButton
+              variant={variant}
+              size={
+                size === "comfortable" ? "comfortable" : 
+                size === "compact" ? "compact" : 
+                size === "icon" ? "comfortable" : "comfortable"
+              }
+              aria-label="More options"
+              className={cn(
+                "rounded-l-none [.theme-designer_&]:h-6 [.theme-dashboard_&]:h-8"
+              )}
+            >
+              {triggerIcon || <ChevronSmallDownIcon />}
+            </IconButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className={menuClassName}>
+            {menuContent}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : (
+        <IconButton
+          variant={variant}
+          size={
+            size === "comfortable" ? "comfortable" : 
+            size === "compact" ? "compact" : 
+            size === "icon" ? "comfortable" : "comfortable"
+          }
+          aria-label="More options"
+          className={cn(
+            "rounded-l-none [.theme-designer_&]:h-6 [.theme-dashboard_&]:h-8"
+          )}
+          onClick={onTriggerClick}
+        >
+          {triggerIcon || <ChevronSmallDownIcon />}
+        </IconButton>
+      )}
     </div>
   );
 }

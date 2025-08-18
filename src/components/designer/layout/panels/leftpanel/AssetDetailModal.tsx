@@ -1,6 +1,8 @@
+"use client";
+
 import React from 'react';
 import { Modal, ModalPortal, ModalOverlay } from '@/components/spring-ui/modal';
-import { CloseDefaultIcon, ShareIcon } from '@/icons';
+import { CloseDefaultIcon, TargetIcon, CheckDefaultIcon } from '@/icons';
 import { Badge } from '@/components/spring-ui/badge';
 import { Input } from '@/components/spring-ui/input';
 import { Textarea } from '@/components/spring-ui/textarea';
@@ -8,9 +10,11 @@ import { TabBar, TabBarItem } from '@/components/spring-ui/tab-bar';
 import { TabNewIcon } from '@/icons/TabNewIcon';
 import { IconButton } from '@/components/spring-ui/icon-button';
 import { DuplicateFillIcon } from '@/icons/DuplicateFillIcon';
-import { SitesStackIcon } from '@/icons/SitesStackIcon';
+import { LinkIcon } from '@/icons/LinkIcon';
+import { AISparkleIcon } from '@/icons/AISparkleIcon';
 import { BuyIcon } from '@/icons/BuyIcon';
 import { Button } from '@/components/spring-ui/button';
+import { SplitButton } from '@/components/spring-ui/split-button';
 import { MoreIcon } from '@/icons/MoreIcon';
 import {
   DropdownMenu,
@@ -27,9 +31,14 @@ import { Row } from '@/components/spring-ui/row';
 import { DownloadIcon } from '@/icons/DownloadIcon';
 import { TimeIcon } from '@/icons/TimeIcon';
 import { UndoIcon } from '@/icons/UndoIcon';
+import { RedoIcon } from '@/icons/RedoIcon';
+import { CropIcon } from '@/icons/CropIcon';
 import { EditIcon } from '@/icons/EditIcon';
 import { UploadIcon } from '@/icons/UploadIcon';
 import { AddIcon } from '@/icons/AddIcon';
+import { FillIcon } from '@/icons/FillIcon';
+import { FilterSmallContrastIcon } from '@/icons/FilterSmallContrastIcon';
+import { FilterSmallInteractionIcon } from '@/icons/FilterSmallInteractionIcon';
 import { ImageIcon } from '@/icons/ImageIcon';
 import { BrushIcon } from '@/icons/BrushIcon';
 import { MainDocsIcon } from '@/icons/MainDocsIcon';
@@ -67,6 +76,7 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
   const [displayedImageUrl, setDisplayedImageUrl] = React.useState<string>('');
   const [showSimilarAssets, setShowSimilarAssets] = React.useState<boolean>(false);
   const [selectedVersionId, setSelectedVersionId] = React.useState<string>('');
+  const [isImageEditModalOpen, setIsImageEditModalOpen] = React.useState<boolean>(false);
   
   // Initialize selectedVersionId immediately when asset is available
   React.useEffect(() => {
@@ -329,6 +339,25 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
     return format.includes('pdf') || name.endsWith('.pdf');
   };
 
+  // Function to check if asset is a document or PDF
+  const isDocumentOrPDF = (asset: any) => {
+    const format = asset.format?.toLowerCase() || '';
+    const type = asset.type?.toLowerCase() || '';
+    const name = asset.name?.toLowerCase() || '';
+    
+    // Check for PDF files
+    if (format.includes('pdf') || name.endsWith('.pdf')) return true;
+    
+    // Check for document types
+    if (type === 'documents') return true;
+    
+    // Check for common document formats
+    const documentFormats = ['doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp'];
+    if (documentFormats.some(docFormat => format.includes(docFormat) || name.endsWith(`.${docFormat}`))) return true;
+    
+    return false;
+  };
+
   // Function to check if asset is an image
   const isImage = (asset: any) => {
     const format = asset.format?.toLowerCase() || '';
@@ -438,59 +467,48 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
         return (
           <div className="space-y-5">
             <div>
-              <h3 className="text-black/60 mb-1">File Name</h3>
-              <Input
-                type="text"
-                value={editingFilename}
-                onChange={(e) => setEditingFilename(e.target.value)}
-                onBlur={() => {
-                  setFilename(editingFilename);
-                  const fileExtension = asset.format ? asset.format.toLowerCase() : getFileType(asset).toLowerCase();
-                  const newName = editingFilename + '.' + fileExtension;
-                  asset.name = newName;
-                  saveAssetChanges({ name: newName });
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    setFilename(editingFilename);
-                    const fileExtension = asset.format ? asset.format.toLowerCase() : getFileType(asset).toLowerCase();
-                    const newName = editingFilename + '.' + fileExtension;
-                    asset.name = newName;
-                    saveAssetChanges({ name: newName });
-                  }
-                }}
-                className="text-sm shadow-none"
-              />
+              <div className="flex items-center justify-between">
+                <div
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="text-lg font-semibold text-gray-900 outline-none border-b-2 border-transparent hover:border-gray-200 focus:border-blue-500 transition-colors cursor-text min-h-[32px] flex items-center flex-1"
+                  onInput={(e) => setEditingFilename(e.currentTarget.textContent || '')}
+                  onBlur={() => {
+                    if (editingFilename.trim()) {
+                      setFilename(editingFilename);
+                      const fileExtension = asset.format ? asset.format.toLowerCase() : getFileType(asset).toLowerCase();
+                      const newName = editingFilename + '.' + fileExtension;
+                      asset.name = newName;
+                      saveAssetChanges({ name: newName });
+                    } else {
+                      setEditingFilename(filename); // Reset if empty
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
+                >
+                  {editingFilename}
+                </div>
+
+              </div>
             </div>
             <div>
-              <h3 className="text-black/60 mb-1">File Info</h3>
               <div className="flex items-center gap-1">
+                <span className="text-sm text-gray-900">{getFileType(asset)}</span>
+                <span className="text-sm text-gray-300">•</span>
                 <span className="text-sm text-gray-900">{asset.fileSize}</span>
                 <span className="text-sm text-gray-300">•</span>
                 <span className="text-sm text-gray-900">{asset.width && asset.height ? `${asset.width} × ${asset.height}` : ''}</span>
-                <span className="text-sm text-gray-300">•</span>
-                <span className="text-sm text-gray-900">{getFileType(asset)}</span>
               </div>
-              {asset.url && (
-                <div className="flex items-center gap-1 mt-1">
-                  <a
-                    href={asset.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-xs text-black/60 hover:underline truncate overflow-hidden whitespace-nowrap max-w-full"
-                  >
-                    {asset.url}
-                  </a>
-                  <TabNewIcon className="text-gray-500 w-4 h-4 flex-shrink-0" />
-                  <IconButton variant="ghost" size="compact" aria-label="Copy URL">
-                    <DuplicateFillIcon className="w-4 h-4 text-gray-500" />
-                  </IconButton>
-                </div>
-              )}
+
             </div>
             <hr className="border-t border-gray-200 mt-2 mb-6" />
             <div>
-              <h3 className="text-black/60 mb-1">Alt Text</h3>
+              <h3 className="section-label mb-1">Alt Text</h3>
               <Textarea
                 value={altText}
                 onChange={(e) => setAltText(e.target.value)}
@@ -505,54 +523,32 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                 placeholder="Enter alt text for accessibility..."
               />
             </div>
+            {/* Tags Section */}
             <div>
-              <h3 className="text-black/60 mb-1">Uploaded</h3>
-              <p className="text-sm text-gray-900">
-                {asset.uploadedDate ? new Date(asset.uploadedDate).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric' 
-                }) : 'Unknown'}
-                {asset.uploadedBy ? ` by ${asset.uploadedBy}` : ''}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-black/60 mb-1">Last modified</h3>
-              <p className="text-sm text-gray-900">
-                {asset.dateModified ? new Date(asset.dateModified).toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric' 
-                }) : 'Unknown'}
-                {asset.uploadedBy ? ` by ${asset.uploadedBy}` : ''}
-              </p>
-            </div>
-
-            <>
-              <hr className="border-t border-gray-200 mt-2 mb-6" style={{ marginBottom: '24px' }} />
+              <h3 className="section-label mb-3">Tags</h3>
               {/* Custom Tag Input */}
-                              <div className="flex items-center gap-2 mb-4">
-                  <BuyIcon className="w-6 h-6 text-gray-400" />
-                  <Input
-                    type="text"
-                    value={customTag}
-                    onChange={e => setCustomTag(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && customTag.trim()) {
-                        if (!selectedTags.includes(customTag.trim())) {
-                          const newTags = [...selectedTags, customTag.trim()];
-                          setSelectedTags(newTags);
-                        }
-                        setCustomTag('');
+              <div className="flex items-center gap-2 mb-4">
+                <BuyIcon className="w-6 h-6 text-gray-400" />
+                <Input
+                  type="text"
+                  value={customTag}
+                  onChange={e => setCustomTag(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && customTag.trim()) {
+                      if (!selectedTags.includes(customTag.trim())) {
+                        const newTags = [...selectedTags, customTag.trim()];
+                        setSelectedTags(newTags);
                       }
-                    }}
-                    placeholder="Add tags"
-                    className="flex-1 shadow-none"
-                  />
-                </div>
-                {/* End Custom Tag Input */}
-                <div className="flex items-center gap-2">
-                  <SitesStackIcon className="w-4 h-4 text-gray-400" />
+                      setCustomTag('');
+                    }
+                  }}
+                  placeholder="Add tags"
+                  className="flex-1 shadow-none"
+                />
+              </div>
+              {/* End Custom Tag Input */}
+              <div className="flex flex-wrap items-start gap-2 min-h-[24px]">
+                <AISparkleIcon className="w-4 h-4 text-gray-400 mt-0.5" />
                 {originalTags.length > 0 ? (
                   originalTags.map((tag: string) => (
                     <TagPill
@@ -587,7 +583,39 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                   />
                 ))}
               </div>
-            </>
+            </div>
+            <hr className="border-t border-gray-200 mt-2 mb-6" />
+            <div>
+              <h3 className="section-label mb-3">File Info</h3>
+              <div className="mb-4">
+                <h3 className="text-black/60 mb-1">Original File Name</h3>
+              <p className="text-sm text-gray-900">
+                {asset.name || 'Unknown'}
+              </p>
+            </div>
+            <div className="mb-4">
+              <h3 className="text-black/60 mb-1">Uploaded</h3>
+              <p className="text-sm text-gray-900">
+                {asset.uploadedDate ? new Date(asset.uploadedDate).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric' 
+                }) : 'Unknown'}
+                {asset.uploadedBy ? ` by ${asset.uploadedBy}` : ''}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-black/60 mb-1">Last modified</h3>
+              <p className="text-sm text-gray-900">
+                {asset.dateModified ? new Date(asset.dateModified).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric' 
+                }) : 'Unknown'}
+                {asset.uploadedBy ? ` by ${asset.uploadedBy}` : ''}
+              </p>
+            </div>
+              </div>
           </div>
         );
       case 'site-usage':
@@ -669,7 +697,12 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Active</span>
-                        <IconButton variant="ghost" size="compact" aria-label="View site">
+                        <IconButton 
+                          variant="ghost" 
+                          size="compact" 
+                          aria-label="View site"
+                          onClick={() => window.open('/', '_blank')}
+                        >
                           <TabNewIcon className="w-4 h-4 text-blue-600" />
                         </IconButton>
                       </div>
@@ -698,18 +731,22 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
         const versionHistory = generateVersionHistory(asset);
         return (
           <div className="space-y-6">
+            {/* Version History Label */}
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-black/60 font-medium">Version history</h3>
+              <IconButton
+                variant="ghost"
+                size="compact"
+                aria-label="Add new version"
+              >
+                <AddIcon size={16} />
+              </IconButton>
+            </div>
+            
             {/* Current Version */}
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-black/60">Current Version</h3>
-                <IconButton
-                  variant="ghost"
-                  size="compact"
-                  aria-label="Add new version"
-                >
-                  <AddIcon size={16} />
-                </IconButton>
-              </div>
+              <div className="flex flex-col mb-3">
+                <h3 className="text-black/60 mb-2">Current Version</h3>
               <VersionCard
                 id={`current-${asset.id}`}
                 version="V3"
@@ -736,6 +773,7 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                 onSelect={() => handleVersionSelect(`current-${asset.id}`)}
               />
             </div>
+          </div>
 
             {/* Older Versions */}
             <div>
@@ -828,9 +866,6 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                 className: "text-gray-600 flex-shrink-0" 
               })}
               <h2 className="text-lg font-semibold text-gray-900">{filename}</h2>
-              <Badge variant="default" size="comfort" shape="square">
-                {getFileType(asset)}
-              </Badge>
             </div>
             {/* Button wrapper */}
             <div className="flex flex-row gap-2">
@@ -851,13 +886,25 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <IconButton variant="outline" aria-label="Share">
-                <ShareIcon size={16} />
+              <IconButton 
+                variant="outline" 
+                size="comfortable" 
+                aria-label="Open in new tab"
+                onClick={() => {
+                  if (asset.url) {
+                    window.open(asset.url, '_blank', 'noopener,noreferrer');
+                  }
+                }}
+              >
+                <TabNewIcon size={16} />
               </IconButton>
-                              <Button variant="outline">
-                  <SitesStackIcon size={16} className="mr-1" />
-                  Edit
-                </Button>
+              <IconButton 
+                variant="outline" 
+                size="comfortable" 
+                aria-label="Copy link"
+              >
+                <LinkIcon size={16} />
+              </IconButton>
               <Button variant="primary">Download</Button>
               <IconButton variant="ghost" aria-label="Close" onClick={() => onOpenChange(false)}>
                 <CloseDefaultIcon size={20} />
@@ -896,6 +943,28 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
               
               {/* Center Column - Large Image */}
               <div className="flex-1 flex flex-col items-center justify-center relative">
+                {/* Action Buttons - Top Right of Asset Focus Area */}
+                {!isDocumentOrPDF(asset) && (
+                  <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+                    <IconButton 
+                      variant="ghost" 
+                      aria-label="Target"
+                      className="bg-white hover:bg-gray-100 border border-gray-300"
+                    >
+                      <TargetIcon size={16} />
+                    </IconButton>
+                    <Button 
+                      variant="ghost" 
+                      size="compact"
+                      className="bg-white hover:bg-gray-100 border border-gray-300"
+                      onClick={() => setIsImageEditModalOpen(true)}
+                    >
+                      <AISparkleIcon size={16} className="mr-1" />
+                      Edit
+                    </Button>
+                  </div>
+                )}
+                
                 {/* Related Assets Section - Positioned relative to asset focus view */}
                 <RelatedAssetsSection
                   relatedAssets={generateRelatedAssets(asset)}
@@ -975,7 +1044,7 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                   <TabBarItem value="details" className="px-2">Details</TabBarItem>
                   <TabBarItem value="site-usage" className="px-2">Insights</TabBarItem>
                   <TabBarItem value="versions" className="px-2">
-                    Versions
+                    Activity
                   </TabBarItem>
                 </TabBar>
                 
@@ -988,6 +1057,111 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
           </div>
         </div>
       </ModalPortal>
+      
+      {/* Image Edit Modal */}
+      {isImageEditModalOpen && (
+        <Modal open={isImageEditModalOpen} onOpenChange={setIsImageEditModalOpen}>
+          <ModalPortal>
+            <ModalOverlay className="bg-black/60" />
+            <div className="fixed left-[50%] top-[50%] z-50 w-[calc(100vw-96px)] h-[calc(100vh-96px)] translate-x-[-50%] translate-y-[-50%] bg-transparent shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 flex flex-col p-0">
+              <div className="w-full h-full bg-white rounded-xl overflow-hidden flex flex-col">
+                {/* Image Edit Modal Header */}
+                <div className="flex items-center px-6 py-4 border-b border-gray-200 bg-white flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <IconButton variant="ghost" size="comfortable" aria-label="Undo">
+                    <UndoIcon size={16} />
+                  </IconButton>
+                  <IconButton variant="ghost" size="comfortable" aria-label="Redo">
+                    <RedoIcon size={16} />
+                  </IconButton>
+                </div>
+                <div className="flex-1 flex justify-center">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold text-gray-900">Edit Image</h2>
+                    <span className="text-sm text-gray-500">{asset?.name}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" onClick={() => setIsImageEditModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <SplitButton
+                    variant="primary"
+                    onButtonClick={() => {
+                      // Handle save logic here
+                      console.log('Save clicked');
+                    }}
+                    menuContent={
+                      <DropdownMenuItem onClick={() => {
+                        // Handle save as new logic here
+                        console.log('Save as new clicked');
+                      }}>
+                        Save as new
+                      </DropdownMenuItem>
+                    }
+                  >
+                    <CheckDefaultIcon size={16} className="mr-2" />
+                    Save
+                  </SplitButton>
+                </div>
+              </div>
+              
+              {/* Image Edit Modal Content */}
+              <div className="flex-1 flex min-h-0">
+                {/* Left Sidebar - Tools */}
+                <div className="w-64 bg-white border-r border-gray-200 p-4">
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      {[
+                        { name: 'Crop', active: true, icon: CropIcon },
+                        { name: 'Adjust', active: false, icon: FilterSmallContrastIcon },
+                        { name: 'Background', active: false, icon: FillIcon },
+                        { name: 'Insert', active: false, icon: AddIcon },
+                        { name: 'Edit with AI', active: false, icon: FilterSmallInteractionIcon }
+                      ].map((tool, index) => {
+                        const IconComponent = tool.icon;
+                        return (
+                          <button
+                            key={tool.name}
+                            className={`w-full flex flex-col items-center py-3 px-2 rounded-lg transition-colors border ${
+                              tool.active 
+                                ? 'bg-gray-100 border-gray-300' 
+                                : 'bg-white hover:bg-gray-50 border-gray-200'
+                            }`}
+                          >
+                            <div className="w-8 h-8 flex items-center justify-center mb-2">
+                              <IconComponent size={20} className="text-gray-900" />
+                            </div>
+                            <span className={`text-xs font-medium ${
+                              tool.active ? 'text-gray-900' : 'text-gray-700'
+                            }`}>
+                              {tool.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Center - Image Editor */}
+                <div className="flex-1 flex items-center justify-center p-8 bg-white h-full">
+                  <div className="relative flex items-center justify-center w-full h-full">
+                    <img 
+                      src={asset?.url} 
+                      alt={asset?.name}
+                      className="max-w-[calc(100%-160px)] max-h-[calc(100%-160px)] object-contain shadow-lg border-2 border-black border-dashed"
+                    />
+                  </div>
+                </div>
+                
+
+              </div>
+              </div>
+            </div>
+          </ModalPortal>
+        </Modal>
+      )}
     </Modal>
   );
 };

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import AssetCard from "@/components/designer/layout/panels/leftpanel/AssetCard";
 import { ImageIcon, VideoIcon, MainDocsIcon } from "@/icons";
 import AssetDetailModal from "@/components/designer/layout/panels/leftpanel/AssetDetailModal";
+import { UploadProgressBanner } from "@/components/designer/layout/panels/leftpanel/UploadProgressBanner";
 import { Button } from '@/components/spring-ui/button';
 import { IconButton } from '@/components/spring-ui/icon-button';
 import { Filter } from '@/components/spring-ui/filter';
@@ -63,14 +64,10 @@ function AllAssetsContent() {
   const [loading, setLoading] = useState(true);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [archivedAssetIds, setArchivedAssetIds] = useState<number[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [showUploadBanner, setShowUploadBanner] = useState(false);
+  const [uploadingFileName, setUploadingFileName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Set webkitdirectory attribute on the file input
-  useEffect(() => {
-    if (fileInputRef.current) {
-      fileInputRef.current.setAttribute('webkitdirectory', '');
-    }
-  }, []);
 
   // Handle URL parameter for site filter
   useEffect(() => {
@@ -124,6 +121,28 @@ function AllAssetsContent() {
     const files = event.target.files;
     if (files) {
       console.log('Files selected:', files);
+      
+      // Show upload banner and start progress simulation
+      setShowUploadBanner(true);
+      setUploadProgress(0);
+      setUploadingFileName(files.length === 1 ? files[0].name : `${files.length} files`);
+      
+      // Simulate upload progress
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 15 + 5; // Random progress increment
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(progressInterval);
+          
+          // Hide banner after a short delay
+          setTimeout(() => {
+            setShowUploadBanner(false);
+            setUploadProgress(0);
+          }, 1000);
+        }
+        setUploadProgress(Math.min(progress, 100));
+      }, 200);
       
       // Convert FileList to Array and process each file
       Array.from(files).forEach((file) => {
@@ -250,9 +269,14 @@ function AllAssetsContent() {
               ref={fileInputRef}
               style={{ display: 'none' }}
               multiple
+              accept="*/*"
+              mozdirectory
+              webkitdirectory
               onChange={handleFileChange}
             />
-            <Button variant="primary" onClick={() => fileInputRef.current?.click()}>
+            <Button variant="primary" onClick={() => {
+              fileInputRef.current?.click();
+            }}>
               <AddIcon className="mr-2" /> Upload
             </Button>
           </div>
@@ -526,6 +550,14 @@ function AllAssetsContent() {
           onOpenChange={setShowAssetDetailModal}
         />
       )}
+      
+      {/* Upload Progress Banner */}
+      <UploadProgressBanner
+        isVisible={showUploadBanner}
+        progress={uploadProgress}
+        fileName={uploadingFileName}
+        onClose={() => setShowUploadBanner(false)}
+      />
       
       {/* Floating Bulk Actions Bar - Show when assets are selected */}
       {selectedAssetIds.length > 0 && (

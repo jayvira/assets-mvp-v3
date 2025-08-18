@@ -87,6 +87,8 @@ export const getAssetById = async (id: number): Promise<Asset | null> => {
     return null
   }
 
+
+
   // Transform tags from string to array
   return data ? {
     ...data,

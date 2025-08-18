@@ -8,6 +8,8 @@ import Accordion from '@/components/spring-ui/accordion';
 import { Input } from "@/components/spring-ui/input";
 import { Row } from "@/components/spring-ui/row";
 import { usePages } from '@/context/PagesContext';
+import { useApp } from '@/context/AppContext';
+import { useRouter } from 'next/navigation';
 import { SITE_PAGES, PageItem, PageSection } from '@/config/pages';
 
 const PagesPanel = () => {
@@ -16,6 +18,12 @@ const PagesPanel = () => {
 
   // Use the Pages context
   const { selectedPage, setSelectedPage } = usePages();
+  
+  // Use the App context to navigate between sections
+  const { navigateTo, setViewingTestimonials, clearExplicitCMSNavigation } = useApp();
+  
+  // Use router to update URL
+  const router = useRouter();
 
   // Get icon for page
   const getPageIcon = (item: PageItem) => {
@@ -29,8 +37,32 @@ const PagesPanel = () => {
 
   // Handle page selection
   const handleSelectPage = (path: string) => {
+    console.log('Page selected:', path); // Debug log
+    
     // Note: Panel closing is handled by useEffect in LeftSidebar that detects page changes
     setSelectedPage(path);
+    
+    // Special handling for CMS Template pages - add /cms to URL without changing section
+    if (path === '/class' || path === '/testimonials') {
+      console.log('Updating URL to /mary-prototype/cms'); // Debug log
+      // Set the testimonials flag to prevent AppContext from switching sections
+      setViewingTestimonials(true);
+      // Clear any explicit CMS navigation flag since we're not actually going to CMS section
+      clearExplicitCMSNavigation();
+      // Use window.history to update URL without triggering router navigation
+      // This prevents the AppContext from switching to CMS section
+      // Include the full base path
+      window.history.pushState({}, '', '/mary-prototype/cms');
+    } else {
+      // Clear the testimonials flag for other pages
+      setViewingTestimonials(false);
+      // Clean up the URL by removing /cms when switching to non-CMS pages
+      // This prevents the AppContext from detecting /cms and switching sections
+      if (window.location.pathname.includes('/cms')) {
+        console.log('Cleaning up URL from /cms to /mary-prototype'); // Debug log
+        window.history.pushState({}, '', '/mary-prototype');
+      }
+    }
   };
 
   return (

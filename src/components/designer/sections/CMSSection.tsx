@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useApp } from '@/context/AppContext';
 import CMSNavigation from './CMS/CMSNavigation';
 import CMSTable from './CMS/CMSTable';
 import CMSItemDetail from './CMS/CMSItemDetail';
@@ -24,7 +25,7 @@ export interface CMSItem {
 
 // Mock collections (without itemCount - will be calculated)
 const mockCollectionData = [
-  { id: '1', name: 'Blog Posts' },
+  { id: '1', name: 'Classes' },
   { id: '2', name: 'Products' },
   { id: '3', name: 'Team Members' },
   { id: '4', name: 'Case Studies' },
@@ -34,21 +35,21 @@ const mockItems: Record<string, CMSItem[]> = {
   '1': [
     {
       id: '1',
-      name: 'Getting Started with React',
+      name: 'Power Pilates',
       publishedDate: '2024-01-15',
       status: 'published',
       createdDate: '2024-01-10',
       modifiedDate: '2024-01-15',
-      content: { title: 'Getting Started with React', body: 'Lorem ipsum...' }
+      content: { title: 'Power Pilates', body: 'Lorem ipsum...' }
     },
     {
       id: '2',
-      name: 'Advanced TypeScript Tips',
+      name: 'Restorative Yoga',
       publishedDate: null,
       status: 'draft',
       createdDate: '2024-01-12',
       modifiedDate: '2024-01-14',
-      content: { title: 'Advanced TypeScript Tips', body: 'Lorem ipsum...' }
+      content: { title: 'Restorative Yoga', body: 'Lorem ipsum...' }
     },
   ],
   '2': [
@@ -87,15 +88,16 @@ const mockItems: Record<string, CMSItem[]> = {
 };
 
 export default function CMSSection() {
+  const { currentSection, pendingCMSItemId } = useApp();
   // Calculate actual item counts from mockItems
   const mockCollections: CMSCollection[] = mockCollectionData.map(collection => ({
     ...collection,
     itemCount: mockItems[collection.id]?.length || 0
   }));
 
-  const [selectedCollection, setSelectedCollection] = useState<CMSCollection | null>(mockCollections[0]);
-  const [selectedItem, setSelectedItem] = useState<CMSItem | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCollection, setSelectedCollection] = useState<CMSCollection | null>(() => mockCollections[0]);
+  const [selectedItem, setSelectedItem] = useState<CMSItem | null>(() => null);
+  const [searchQuery, setSearchQuery] = useState(() => '');
 
   const currentItems = selectedCollection ? mockItems[selectedCollection.id] || [] : [];
   const filteredItems = currentItems.filter(item => 
@@ -114,6 +116,21 @@ export default function CMSSection() {
   const handleItemClose = () => {
     setSelectedItem(null);
   };
+
+  // Handle pending CMS item
+  React.useEffect(() => {
+    if (pendingCMSItemId === 'power-pilates' && currentSection === 'cms') {
+      // Find the Classes collection (first collection)
+      const classesCollection = mockCollections[0];
+      
+      // Find Power Pilates item
+      const powerPilatesItem = mockItems['1'][0]; // First item in Classes collection
+      
+      // Set states
+      setSelectedCollection(classesCollection);
+      setSelectedItem(powerPilatesItem);
+    }
+  }, [pendingCMSItemId, currentSection]);
 
   // Keyboard navigation for items
   React.useEffect(() => {

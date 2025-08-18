@@ -2,6 +2,14 @@
 
 import React from 'react';
 import { Badge } from '@/components/spring-ui/badge';
+import { IconButton } from '@/components/spring-ui/icon-button';
+import { MoreIcon } from '@/icons/MoreIcon';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from '@/components/spring-ui/dropdown-menu';
 
 interface VersionCardProps {
   id: string;
@@ -63,7 +71,7 @@ const VersionCard: React.FC<VersionCardProps> = ({
     >
       {/* Asset Thumbnail */}
       <div 
-        className="w-24 flex-shrink-0 relative"
+        className="w-20 flex-shrink-0 relative"
         style={{
           backgroundImage: `
             linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
@@ -118,6 +126,32 @@ const VersionCard: React.FC<VersionCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Menu Button for non-current versions */}
+      {!isCurrent && (
+        <div className="flex items-center justify-center w-8 flex-shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <IconButton 
+                variant="ghost" 
+                size="compact" 
+                aria-label="Version options"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreIcon size={16} />
+              </IconButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                Restore
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                Download
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </div>
   );
 };

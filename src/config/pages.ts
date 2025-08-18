@@ -30,6 +30,7 @@ export const SITE_PAGES: PageSection[] = [
     title: 'CMS Collection pages',
     expanded: true,
     items: [
+      { name: 'Class Template', path: '/class' },
       { name: 'Testimonials Template', path: '/testimonials' }
     ]
   },

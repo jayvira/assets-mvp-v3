@@ -11,6 +11,10 @@ type AppContextType = {
   isStyleGuideOpen: boolean;
   openStyleGuide: () => void;
   closeStyleGuide: () => void;
+  setViewingTestimonials: (viewing: boolean) => void;
+  clearExplicitCMSNavigation: () => void;
+  openCMSItemDetails: (itemId: string) => void;
+  pendingCMSItemId: string | null;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -18,8 +22,24 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentSection, setCurrentSection] = useState<AppSection>('home');
   const [isStyleGuideOpen, setIsStyleGuideOpen] = useState(false);
+  const [isViewingTestimonials, setIsViewingTestimonials] = useState(false);
+  const [isExplicitlyNavigatingToCMS, setIsExplicitlyNavigatingToCMS] = useState(false);
+  const [pendingCMSItemId, setPendingCMSItemId] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Listen for switchToCMSTab event
+  useEffect(() => {
+    const handleSwitchToCMSTab = () => {
+      setIsExplicitlyNavigatingToCMS(true);
+      setCurrentSection('cms');
+    };
+
+    window.addEventListener('switchToCMSTab', handleSwitchToCMSTab);
+    return () => {
+      window.removeEventListener('switchToCMSTab', handleSwitchToCMSTab);
+    };
+  }, []);
 
   useEffect(() => {
     // Sync URL path with state
@@ -28,6 +48,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsStyleGuideOpen(true);
       } else {
         setIsStyleGuideOpen(false);
+        
+        // Special case: If we're viewing testimonials page, stay in home section regardless of URL
+        if (isViewingTestimonials) {
+          return;
+        }
+        
+        // Special case: Only allow CMS section if explicitly navigating to it
+        if (pathname.includes('/cms') && !isExplicitlyNavigatingToCMS) {
+          // Don't switch to CMS section if we're not explicitly navigating there
+          return;
+        }
         
         if (pathname.includes('/apps')) {
           setCurrentSection('apps');
@@ -40,10 +71,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, [pathname]);
+  }, [pathname, isViewingTestimonials, isExplicitlyNavigatingToCMS]);
 
   const navigateTo = (section: AppSection) => {
     setCurrentSection(section);
+    
+    // Set the explicit navigation flag when navigating to CMS
+    if (section === 'cms') {
+      setIsExplicitlyNavigatingToCMS(true);
+    } else {
+      setIsExplicitlyNavigatingToCMS(false);
+    }
     
     // Only navigate to actual routes that exist as Next.js pages
     // Apps, CMS, and Insights are handled by state-based routing in LayoutContent
@@ -68,13 +106,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // For other sections, just rely on state
   };
 
+  const setViewingTestimonials = (viewing: boolean) => {
+    setIsViewingTestimonials(viewing);
+  };
+
+  const clearExplicitCMSNavigation = () => {
+    setIsExplicitlyNavigatingToCMS(false);
+  };
+
+  const openCMSItemDetails = (itemId: string) => {
+    setPendingCMSItemId(itemId);
+    setIsExplicitlyNavigatingToCMS(true);
+    setCurrentSection('cms');
+  };
+
   return (
     <AppContext.Provider value={{ 
       currentSection, 
       navigateTo, 
       isStyleGuideOpen, 
       openStyleGuide, 
-      closeStyleGuide 
+      closeStyleGuide,
+      setViewingTestimonials,
+      clearExplicitCMSNavigation,
+      openCMSItemDetails,
+      pendingCMSItemId
     }}>
       {children}
     </AppContext.Provider>

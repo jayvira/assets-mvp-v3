@@ -40,9 +40,10 @@ const RelatedAssetsSection: React.FC<RelatedAssetsSectionProps> = ({
           <div className="flex items-center gap-3">
             <IconButton
               variant="ghost"
-              size="compact"
+              size="comfortable"
               onClick={onToggleExpanded}
               aria-label="Toggle related assets panel"
+              className="bg-white hover:bg-gray-100 border border-gray-300"
             >
               <StackIcon className="w-5 h-5 text-gray-600" />
             </IconButton>
@@ -68,21 +69,19 @@ const RelatedAssetsSection: React.FC<RelatedAssetsSectionProps> = ({
       
               {isExpanded && (
           <div className="flex-1 px-4 pt-2 pb-4 overflow-y-auto">
-                        {/* Action Buttons */}
-            <div className="flex gap-2 mb-3">
-              <Button variant="outline" size="compact" className="flex-1 text-xs px-2 py-1">
-                <UploadIcon className="w-3 h-3 mr-1" />
-                Upload
-              </Button>
-              <Button variant="outline" size="compact" className="flex-1 text-xs px-2 py-1">
-                <AssetManagerIcon className="w-3 h-3 mr-1" />
-                Browse
-              </Button>
-            </div>
-            
             {/* Empty State */}
-            <div className="text-center py-4 mb-4 bg-[var(--bg-tertiary)] rounded">
-              <p className="text-xs text-gray-500">No related assets are linked</p>
+            <div className="text-center py-6 mb-4 border-2 border-dashed border-gray-300 rounded">
+              <p className="text-xs text-gray-500 mb-4">No related assets are linked</p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="compact" className="flex-1 text-xs px-2 py-1">
+                  <UploadIcon className="w-3 h-3 mr-1" />
+                  Upload
+                </Button>
+                <Button variant="outline" size="compact" className="flex-1 text-xs px-2 py-1">
+                  <AssetManagerIcon className="w-3 h-3 mr-1" />
+                  Browse
+                </Button>
+              </div>
             </div>
             
             {/* Divider */}

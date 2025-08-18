@@ -323,6 +323,7 @@ function PageSelector() {
       case '/': return 'Home';
       case '/contact': return 'Contact Us';
       case '/styles': return '[Draft] Styles';
+      case '/class': return 'Class Template';
       case '/testimonials': return 'Testimonials Template';
       case '/password': return 'Password';
       case '/404': return '404';
@@ -334,9 +335,14 @@ function PageSelector() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="compact" className="h-6">
-          <PageDefaultIcon size={16} className="opacity-70" />
-          <span>{getPageName(selectedPage)}</span>
-          <ChevronSmallDownIcon className="opacity-70" />
+          <PageDefaultIcon 
+            size={16} 
+            className={`opacity-70 ${(selectedPage === '/class' || selectedPage === '/testimonials') ? 'color-purple-text' : ''}`} 
+          />
+          <span className={(selectedPage === '/class' || selectedPage === '/testimonials') ? 'color-purple-text' : ''}>
+            {getPageName(selectedPage)}
+          </span>
+          <ChevronSmallDownIcon className={`opacity-70 ${(selectedPage === '/class' || selectedPage === '/testimonials') ? 'color-purple-text' : ''}`} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[160px]">
@@ -353,9 +359,13 @@ function PageSelector() {
           [Draft] Styles
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setSelectedPage('/class')}>
+          <PageDefaultIcon size={16} className="mr-[4px] color-purple-text" />
+          <span className="color-purple-text">Class Template</span>
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setSelectedPage('/testimonials')}>
-          <PageDefaultIcon size={16} className="mr-[4px]" />
-          Testimonials Template
+          <PageDefaultIcon size={16} className="mr-[4px] color-purple-text" />
+          <span className="color-purple-text">Testimonials Template</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setSelectedPage('/password')}>

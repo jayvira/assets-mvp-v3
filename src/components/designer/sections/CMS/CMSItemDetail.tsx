@@ -12,8 +12,9 @@ import {
   SelectValue 
 } from '@/components/spring-ui/select';
 import { IconButton } from '@/components/spring-ui/icon-button';
-import { XIcon } from '@/icons/XIcon';
+import { CloseDefaultIcon } from '@/icons/CloseDefaultIcon';
 import { CMSCollection, CMSItem } from '../CMSSection';
+import CMSFormImageCard from './CMSFormImageCard';
 
 interface CMSItemDetailProps {
   item: CMSItem;
@@ -91,7 +92,7 @@ export default function CMSItemDetail({
           size="compact"
           variant="ghost"
         >
-          <XIcon size={16} />
+          <CloseDefaultIcon size={16} />
         </IconButton>
       </div>
 
@@ -109,6 +110,20 @@ export default function CMSItemDetail({
               placeholder="Item name"
             />
           </div>
+
+          <CMSFormImageCard
+            label="Hero image"
+            value={editedItem.content?.heroImage || null}
+            onChange={(value, fileName) => {
+              handleContentChange('heroImage', value);
+              if (fileName) {
+                handleContentChange('heroImageName', fileName);
+              }
+            }}
+            onUpload={() => console.log('Upload new hero image')}
+            onBrowse={() => console.log('Browse hero image assets')}
+            fileName={editedItem.content?.heroImageName || undefined}
+          />
 
           <div className="space-y-2">
             <label className="text-xs text-[var(--text-secondary)]">Status</label>
@@ -184,28 +199,7 @@ export default function CMSItemDetail({
         </div>
       </div>
 
-      {/* Footer Actions */}
-      {isDirty && (
-        <div className="p-4 border-t border-[var(--border-primary)] bg-[var(--bg-primary)]">
-          <div className="flex gap-2">
-            <Button
-              onClick={handleSave}
-              size="compact"
-              variant="primary"
-              className="flex-1"
-            >
-              Save Changes
-            </Button>
-            <Button
-              onClick={handleDiscard}
-              size="compact"
-              variant="outline"
-            >
-              Discard
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Footer Actions - Removed */}
     </div>
   );
 } 

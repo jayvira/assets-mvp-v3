@@ -20,19 +20,23 @@ const filterVariants = cva(
           "bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-raised)]",
         "blue-subtle":
           "bg-[var(--blue-bg-transparent)] text-[var(--text-blue)] hover:bg-[var(--blue-bg-transparent-hover)]",
+        light:
+          "border border-[var(--border-default)] bg-white text-[var(--text-primary)] hover:bg-[var(--bg-raised)]",
+        dark:
+          "border border-[var(--border-default)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-raised)]",
       },
       state: {
         empty: "",
         filled: "",
       },
       size: {
-        comfortable: "[.theme-designer_&]:h-6 [.theme-designer_&]:px-2 [.theme-dashboard_&]:h-8 [.theme-dashboard_&]:px-3",
-        compact: "[.theme-designer_&]:h-6 [.theme-designer_&]:px-1 [.theme-dashboard_&]:h-8 [.theme-dashboard_&]:px-2",
+        comfortable: "[.theme-designer_&]:h-6 [.theme-dashboard_&]:h-8 [.theme-designer_&]:px-2 [.theme-dashboard_&]:px-3",
+        compact: "[.theme-designer_&]:h-6 [.theme-dashboard_&]:h-8 [.theme-designer_&]:px-1 [.theme-dashboard_&]:px-2",
         icon: "[.theme-designer_&]:h-6 [.theme-designer_&]:w-6 [.theme-dashboard_&]:w-8",
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "light",
       state: "empty",
       size: "compact",
     },
@@ -62,8 +66,8 @@ function Filter({
   const Comp = asChild ? Slot : "button"
   const [isOpen, setIsOpen] = React.useState(false)
 
-  // Apply appropriate variant based on state
-  const effectiveVariant = state === "filled" ? "blue-subtle" : "outline"
+  // Apply appropriate variant based on state and theme
+  const effectiveVariant = state === "filled" ? "blue-subtle" : "dark"
 
   return (
     <div className="flex items-center">

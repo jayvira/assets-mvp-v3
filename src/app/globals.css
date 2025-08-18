@@ -188,4 +188,10 @@
     font-weight: 500;
     -webkit-font-smoothing: antialiased;
   }
+
+  /* Section label styling for consistent use across components */
+  .section-label {
+    @apply text-xs font-medium;
+    color: var(--color-muted-foreground);
+  }
 }
