@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Modal, ModalPortal, ModalOverlay } from '@/components/spring-ui/modal';
+import { ModalContent } from '@/components/spring-ui/modal';
 import { CloseDefaultIcon, TargetIcon, CheckDefaultIcon } from '@/icons';
 import { Badge } from '@/components/spring-ui/badge';
 import { Input } from '@/components/spring-ui/input';
@@ -78,6 +79,17 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
   const [selectedVersionId, setSelectedVersionId] = React.useState<string>('');
   const [isImageEditModalOpen, setIsImageEditModalOpen] = React.useState<boolean>(false);
   
+  // New state for file import functionality
+  const [isImportConfirmationOpen, setIsImportConfirmationOpen] = React.useState<boolean>(false);
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // State for expanded site cards
+  const [expandedSiteCards, setExpandedSiteCards] = React.useState<Set<number>>(new Set());
+  
+  // State for consistent site data (pages and components counts)
+  const [siteData, setSiteData] = React.useState<Map<number, { pages: number; components: number }>>(new Map());
+  
   // Initialize selectedVersionId immediately when asset is available
   React.useEffect(() => {
     if (asset?.id && !selectedVersionId) {
@@ -141,6 +153,79 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onOpenChange]);
+
+  // File handling functions for import functionality
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setIsImportConfirmationOpen(true);
+    }
+    // Reset the input value so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!selectedFile) return;
+    
+    try {
+      // Here you would typically upload the file to your backend/Supabase
+      console.log('Importing file:', selectedFile.name);
+      
+      // Mock upload success - replace with actual upload logic
+      // const { data, error } = await supabase.storage
+      //   .from('assets')
+      //   .upload(`${Date.now()}-${selectedFile.name}`, selectedFile);
+      
+      // Close the confirmation modal
+      setIsImportConfirmationOpen(false);
+      setSelectedFile(null);
+      
+      // You could add a success toast here
+      console.log('File imported successfully');
+      
+    } catch (error) {
+      console.error('Error importing file:', error);
+      // You could add an error toast here
+    }
+  };
+
+  const handleImportCancel = () => {
+    setIsImportConfirmationOpen(false);
+    setSelectedFile(null);
+  };
+
+  // Toggle site card expansion
+  const toggleSiteCard = (siteIndex: number) => {
+    setExpandedSiteCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(siteIndex)) {
+        newSet.delete(siteIndex);
+      } else {
+        newSet.add(siteIndex);
+      }
+      return newSet;
+    });
+  };
+
+  // Get or generate consistent site data
+  const getSiteData = (siteIndex: number) => {
+    if (!siteData.has(siteIndex)) {
+      // Generate more realistic and varied site data
+      const pageCounts = [2, 4, 3, 1, 5, 2, 3, 4]; // Predefined realistic page counts
+      const componentCounts = [0, 1, 1, 0, 2, 0, 1, 3]; // Some sites have 0 components
+      
+      const newData = {
+        pages: pageCounts[siteIndex % pageCounts.length] || Math.floor(Math.random() * 5) + 1,
+        components: componentCounts[siteIndex % componentCounts.length] || 0
+      };
+      setSiteData(prev => new Map(prev).set(siteIndex, newData));
+      return newData;
+    }
+    return siteData.get(siteIndex)!;
+  };
 
   React.useEffect(() => {
     if (asset) {
@@ -491,7 +576,7 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                     }
                   }}
                 >
-                  {editingFilename}
+                  {filename}
                 </div>
 
               </div>
@@ -648,64 +733,73 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
               </div>
             )}
 
-            {/* Performance Analytics Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-600 font-medium">Performance Score</p>
-                    <p className="text-2xl font-bold text-gray-900">92%</p>
-                  </div>
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">A</span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-600 mt-2">Optimized for web</p>
-              </div>
-              
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-gray-600 font-medium">Load Time</p>
-                    <p className="text-2xl font-bold text-gray-900">0.8s</p>
-                  </div>
-                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs">⚡</span>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-600 mt-2">Fast loading</p>
-              </div>
-            </div>
-
-            {/* Site Relationships */}
+                        {/* Usage */}
             <div>
-              <h3 className="text-black/60 mb-3 font-medium">Site Relationships</h3>
-              <div className="space-y-3">
+              <h3 className="text-black/60 mb-3 font-medium">Usage</h3>
+              <div className="flex flex-col rounded-md border border-gray-200 overflow-hidden">
                 {asset.sites && asset.sites.length > 0 ? (
                   asset.sites.map((site: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-900">{getSiteNameById(site.id)}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-500">{site.pages || Math.floor(Math.random() * 15) + 1} pages</span>
-                            <span className="text-xs text-gray-300">•</span>
-                            <span className="text-xs text-gray-500">{site.components || Math.floor(Math.random() * 8) + 1} components</span>
+                    <div key={index} className="flex flex-col group">
+                                              {/* Top section - Site info and chevron */}
+                        <div className={`flex items-start justify-between py-3 px-3 ${!expandedSiteCards.has(index) ? 'border-b border-gray-200' : ''}`}>
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-900">{getSiteNameById(site.id)}</span>
+                                                                                        <IconButton 
+                                variant="ghost" 
+                                size="compact" 
+                                aria-label="View site"
+                                onClick={() => window.open('/', '_blank')}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                              >
+                                <TabNewIcon className="w-3 h-3 text-gray-300" />
+                              </IconButton>
+                            </div>
+                            {!expandedSiteCards.has(index) && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-500">{getSiteData(index).pages} pages</span>
+                                {getSiteData(index).components > 0 && (
+                                  <>
+                                    <span className="text-xs text-gray-300">•</span>
+                                    <span className="text-xs text-gray-500">
+                                      {getSiteData(index).components} {index % 3 === 0 ? 'cms item' : 'component'}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Active</span>
-                        <IconButton 
-                          variant="ghost" 
-                          size="compact" 
-                          aria-label="View site"
-                          onClick={() => window.open('/', '_blank')}
+                        <IconButton
+                          variant="ghost"
+                          size="compact"
+                          aria-label={expandedSiteCards.has(index) ? "Collapse" : "Expand"}
+                          onClick={() => toggleSiteCard(index)}
+                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                         >
-                          <TabNewIcon className="w-4 h-4 text-blue-600" />
+                          <ChevronLargeRightIcon 
+                            size={16} 
+                            className={`transition-transform duration-200 ${
+                              expandedSiteCards.has(index) ? 'rotate-90' : ''
+                            }`}
+                          />
                         </IconButton>
                       </div>
+                      
+                                              {/* Bottom section - Expanded content */}
+                        {expandedSiteCards.has(index) && (
+                          <div className="pb-3 px-3 space-y-2 border-b border-gray-200">
+                            {Array.from({ length: getSiteData(index).pages }, (_, pageIndex) => (
+                              <div key={pageIndex} className="flex items-center gap-2 text-xs text-gray-600 px-3">
+                                <span>Page {pageIndex + 1}</span>
+                                <span className="text-gray-400">•</span>
+                                <span className="text-gray-500">Component {Math.floor(Math.random() * 3) + 1}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                     </div>
                   ))
                 ) : (
@@ -717,6 +811,47 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                     <p className="text-xs text-gray-400">This asset isn't used in any sites yet</p>
                   </div>
                 )}
+              </div>
+            </div>
+            
+            {/* Divider */}
+            <hr className="border-t border-gray-200 my-6" />
+
+            {/* Performance Section */}
+            <div>
+              <h3 className="text-black/60 mb-2 font-medium">Optimization & Performance</h3>
+              
+              {/* Performance Analytics Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-100 p-3 rounded-md border border-gray-200 relative">
+                  <div className="w-2 h-2 bg-green-500 rounded-full absolute top-3 right-3"></div>
+                  <div>
+                    <p className="caption-text text-[var(--text-primary)]">Performance Score</p>
+                    <p className="title-text-bold text-[var(--text-primary)] text-lg">89/100</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-100 p-3 rounded-md border border-gray-200 relative">
+                  <div className="w-2 h-2 bg-green-500 rounded-full absolute top-3 right-3"></div>
+                  <div>
+                    <p className="caption-text text-[var(--text-primary)]">Load Time</p>
+                    <p className="title-text-bold text-[var(--text-primary)] text-lg">412 ms</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-100 p-3 rounded-md border border-gray-200">
+                  <div>
+                    <p className="caption-text text-[var(--text-primary)]">Average Scroll Reach</p>
+                    <p className="title-text-bold text-[var(--text-primary)] text-lg">78%</p>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-100 p-3 rounded-md border border-gray-200">
+                  <div>
+                    <p className="caption-text text-[var(--text-primary)]">Engagement Time</p>
+                    <p className="title-text-bold text-[var(--text-primary)] text-lg">1.4s</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -738,6 +873,7 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
                 variant="ghost"
                 size="compact"
                 aria-label="Add new version"
+                onClick={() => fileInputRef.current?.click()}
               >
                 <AddIcon size={16} />
               </IconButton>
@@ -854,10 +990,22 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
   };
 
   return (
-    <Modal open={open} onOpenChange={onOpenChange}>
-      <ModalPortal>
-        <ModalOverlay />
-        <div className="fixed left-[50%] top-[50%] z-50 w-[480px] translate-x-[-50%] translate-y-[-50%] bg-[var(--bg-primary)] shadow-[var(--shadow-menu-elevated)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 rounded-[4px] !w-screen !h-screen max-w-none max-h-none flex flex-col p-0">
+    <>
+
+      
+      {/* Hidden file input for file picker */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,video/*,.pdf,.doc,.docx,.txt,.rtf,.xls,.xlsx,.ppt,.pptx,.ai,.svg,.eps"
+        onChange={handleFileSelect}
+        style={{ display: 'none' }}
+      />
+      
+      <Modal open={open} onOpenChange={onOpenChange}>
+        <ModalPortal>
+          <ModalOverlay />
+          <div className="fixed left-[50%] top-[50%] z-50 w-[480px] translate-x-[-50%] translate-y-[-50%] bg-[var(--bg-primary)] shadow-[var(--shadow-menu-elevated)] duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 rounded-[4px] !w-screen !h-screen max-w-none max-h-none flex flex-col p-0">
           {/* Custom Modal Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
             <div className="flex items-center gap-3">
@@ -1057,6 +1205,7 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
           </div>
         </div>
       </ModalPortal>
+      </Modal>
       
       {/* Image Edit Modal */}
       {isImageEditModalOpen && (
@@ -1162,7 +1311,127 @@ const AssetDetailModal: React.FC<AssetDetailModalProps> = ({ open, onOpenChange,
           </ModalPortal>
         </Modal>
       )}
-    </Modal>
+      
+      {/* Import Confirmation Modal */}
+      <Modal open={isImportConfirmationOpen} onOpenChange={setIsImportConfirmationOpen}>
+        <ModalPortal>
+          <ModalOverlay />
+          <ModalContent
+            title="Import New Version"
+            primaryAction={{
+              label: "Import",
+              onClick: handleImportConfirm,
+              variant: "primary"
+            }}
+            secondaryAction={{
+              label: "Cancel",
+              onClick: handleImportCancel
+            }}
+          >
+            <div className="p-4">
+              {selectedFile && (
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-600 text-sm font-medium">
+                        {selectedFile.name.split('.').pop()?.toUpperCase() || 'FILE'}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-sm text-gray-600 mt-4">
+                This will create a new version of {asset?.name}, which will replace the old version everywhere it's used.
+              </p>
+              
+              {/* Site Usage Section */}
+              <div className="mt-6">
+                {asset.sites && asset.sites.length > 0 ? (
+                  <div className="flex flex-col rounded-md border border-gray-200 overflow-hidden">
+                    {asset.sites.slice(0, 3).map((site: any, index: number) => {
+                      const siteData = getSiteData(index);
+                      const isExpanded = expandedSiteCards.has(index);
+                      // Get site name from the sites configuration using the ID
+                      const siteName = getSiteNameById(site.id) || `Site ${site.id}`;
+                      
+                      return (
+                        <div key={site.id} className="group">
+                          {/* Top section */}
+                          <div className={`flex flex-col px-3 py-2 ${isExpanded ? '' : 'border-b border-gray-200'}`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <span className="text-xs text-gray-700">{siteName}</span>
+                                <button
+                                  onClick={() => toggleSiteCard(index)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-300 hover:text-gray-400"
+                                >
+                                  <TabNewIcon size={12} />
+                                </button>
+                              </div>
+                              <button
+                                onClick={() => toggleSiteCard(index)}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-500"
+                              >
+                                <ChevronLargeRightIcon 
+                                  size={16} 
+                                  className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                                />
+                              </button>
+                            </div>
+                            
+                            {/* Page count preview - only show when not expanded */}
+                            {!isExpanded && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-500">{siteData.pages} pages</span>
+                                {siteData.components > 0 && (
+                                  <>
+                                    <span className="text-xs text-gray-300">•</span>
+                                    <span className="text-xs text-gray-500">
+                                      {siteData.components} {index % 3 === 0 ? 'cms item' : 'component'}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Bottom section - expanded content */}
+                          {isExpanded && (
+                            <div className="border-b border-gray-200">
+                              <div className="pb-3 px-3 space-y-2">
+                                {Array.from({ length: siteData.pages }, (_, pageIndex) => (
+                                  <div key={pageIndex} className="flex items-center gap-2 text-xs text-gray-600 px-3">
+                                    <span>Page {pageIndex + 1}</span>
+                                    <span className="text-gray-400">•</span>
+                                    <span className="text-gray-500">Component {Math.floor(Math.random() * 3) + 1}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500 py-4 text-center">
+                    No sites using this asset
+                  </div>
+                )}
+              </div>
+            </div>
+          </ModalContent>
+        </ModalPortal>
+      </Modal>
+    </>
   );
 };
 
