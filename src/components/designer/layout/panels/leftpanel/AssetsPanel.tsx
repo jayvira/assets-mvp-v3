@@ -27,9 +27,10 @@ import {
 import { Button } from '@/components/spring-ui/button';
 import { getAllSites, getSiteNameById } from '@/config/sites';
 import { SiteIcon } from '@/icons/SiteIcon';
-import { SegmentedControl, SegmentedControlItem } from "@/components/spring-ui/segmented-control";
-import { GridIcon, ListIcon } from "@/icons";
+import { GridIcon } from "@/icons";
 import { ArrowDownIcon } from '@/icons';
+import { FolderOpenIcon, FolderDefaultIcon } from '@/icons';
+import FolderDesigner from './FolderDesigner';
 
 // Get all sites
 const allSites = getAllSites();
@@ -68,6 +69,14 @@ type FullAssetItem = {
   sites?: { id: string }[]; // Add sites for filtering
 };
 
+// Define folder structure type
+type FolderItem = {
+  id: string;
+  name: string;
+  children?: FolderItem[];
+  level: number;
+};
+
 // Update props interface for AssetsPanel
 interface AssetsPanelProps {
   onAssetSelect: (asset: FullAssetItem | null) => void;
@@ -95,13 +104,37 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
   const [sortCriteria, setSortCriteria] = useState<string>('Date uploaded');
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'gallery' | 'list'>('gallery');
+  const [activeFolderId, setActiveFolderId] = useState<string>('1'); // Default to "All Assets"
+  const [isFolderPanelCollapsed, setIsFolderPanelCollapsed] = useState(true);
   
   // Available filter options
   const [availableFileTypes, setAvailableFileTypes] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [availableStatuses, setAvailableStatuses] = useState<string[]>([]);
 
-
+  // Folder structure data
+  const [folderStructure] = useState<FolderItem[]>([
+    { id: '1', name: 'All Assets', level: 0 },
+    { id: '2', name: 'AI imagery', level: 0 },
+    { id: '3', name: 'Award badges', level: 0 },
+    { id: '4', name: 'Bio images', level: 0 },
+    { id: '5', name: 'Blog images', level: 0 },
+    { id: '6', name: 'CMS images', level: 0 },
+    { id: '7', name: 'DE images', level: 0 },
+    { id: '8', name: 'Featured resources images', level: 0 },
+    { id: '9', name: 'Hero images', level: 0 },
+    { id: '10', name: 'Logos', level: 0 },
+    { id: '11', name: 'Lottie animations', level: 0, children: [
+      { id: '11-1', name: 'DE - Lotties', level: 1 },
+      { id: '11-2', name: 'UK - Lotties', level: 1 }
+    ]},
+    
+    { id: '13', name: 'PDFs', level: 0 },
+    { id: '14', name: 'Placeholder images', level: 0 },
+    { id: '15', name: 'Product UI', level: 0 },
+    { id: '16', name: 'SEO images', level: 0 },
+    
+  ]);
 
   // Fetch assets from Supabase on component mount
   useEffect(() => {
@@ -391,10 +424,30 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
     }
   };
 
+  // Render folder item recursively using FolderDesigner component
+  const renderFolderItem = (folder: FolderItem, isFirst: boolean = false) => (
+    <div key={folder.id}>
+      <FolderDesigner
+        name={folder.name}
+        level={folder.level}
+        hasChildren={folder.children && folder.children.length > 0}
+        isExpanded={false} // You can add state management for this later
+        onClick={() => {
+          setActiveFolderId(folder.id);
+          console.log('Folder clicked:', folder.name, 'ID:', folder.id, 'Active ID:', activeFolderId);
+        }}
+        onToggle={() => console.log('Folder toggle:', folder.name)}
+        isFirstFolder={isFirst}
+        isActive={activeFolderId === folder.id}
+      />
+      {folder.children && folder.children.map(child => renderFolderItem(child, false))}
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-full w-[800px]">
-      {/* Custom Panel Header with search and upload button */}
-      <div className="px-2 py-3 flex items-center justify-between">
+              {/* Custom Panel Header with search and upload button */}
+        <div className="px-4 py-3 flex items-center justify-between">
         <h2 className="title-text-bold">Assets</h2>
         <div className="flex items-center gap-3">
           {/* Hidden file input for uploads */}
@@ -406,7 +459,7 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
             accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
             onChange={handleFileChange}
           />
-          <div className="w-[300px]">
+          <div className="w-[260px]">
             <Input 
               placeholder="Search assets..." 
               value={searchQuery}
@@ -414,11 +467,11 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
             />
           </div>
           <Button
-            variant="ghost"
+            variant="outline"
             size="comfortable"
             onClick={handleUploadClick}
           >
-            <UploadIcon size={16} />
+            <AddIcon size={16} />
             Upload
           </Button>
           {onClose && (
@@ -444,6 +497,19 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
           onMouseDown={(e) => e.stopPropagation()}
           onMouseUp={(e) => e.stopPropagation()}
         >
+          {/* Folder Panel Toggle Button */}
+          <button
+            onClick={() => setIsFolderPanelCollapsed(!isFolderPanelCollapsed)}
+            className="h-6 px-1.5 flex items-center justify-center hover:bg-[var(--bg-hover)] rounded transition-colors border border-[var(--border-default)]"
+            title={isFolderPanelCollapsed ? "Expand folder panel" : "Collapse folder panel"}
+          >
+            {isFolderPanelCollapsed ? (
+              <FolderDefaultIcon size={12} className="text-[var(--text-secondary)]" />
+            ) : (
+              <FolderOpenIcon size={12} className="text-[var(--text-secondary)]" />
+            )}
+          </button>
+
           {/* Site Filter */}
           <Filter 
             variant="dark" 
@@ -551,36 +617,7 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
             {selectedTags.length === 0 ? 'Tags' : selectedTags.join(', ')}
           </Filter>
 
-          {/* Status Filter */}
-          <Filter 
-            variant="dark"
-            size="compact" 
-            state={selectedStatus !== 'all' ? "filled" : "empty"}
-            onClear={() => setSelectedStatus('all')}
-            dropdownContent={
-              <>
-                <DropdownMenuCheckboxItem 
-                  checked={selectedStatus === 'all'}
-                  onCheckedChange={() => setSelectedStatus('all')}
-                >
-                  All Status
-                </DropdownMenuCheckboxItem>
-                {availableStatuses.map(status => (
-                  <DropdownMenuCheckboxItem 
-                    key={status} 
-                    checked={selectedStatus === status}
-                    onCheckedChange={() => setSelectedStatus(status)}
-                  >
-                    {status}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </>
-            }
-            ariaLabel="Status options"
-          >
-            <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/></svg>
-            {selectedStatus === 'all' ? 'Status' : selectedStatus}
-          </Filter>
+
 
           {/* Clear filters button */}
           <Button
@@ -608,7 +645,7 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
                   <Button
                     variant="ghost"
                     size="compact"
-                    className={`text-sm ${sortMenuOpen ? 'bg-[var(--bg-raised)]' : ''}`}
+                    className={`text-xs ${sortMenuOpen ? 'bg-[var(--bg-raised)]' : ''}`}
                   >
                     {sortCriteria}
                   </Button>
@@ -652,132 +689,157 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
                 />
               </IconButton>
             </div>
-            <SegmentedControl value={viewMode} onValueChange={(value) => setViewMode(value as 'gallery' | 'list')}>
-              <SegmentedControlItem value="gallery" aria-label="Gallery view">
-                <GridIcon className="w-4 h-4" />
-              </SegmentedControlItem>
-              <SegmentedControlItem value="list" aria-label="List view">
-                <ListIcon className="w-4 h-4" />
-              </SegmentedControlItem>
-            </SegmentedControl>
+            <IconButton
+              variant="ghost"
+              size="comfortable"
+              title="Grid view"
+            >
+              <GridIcon size={16} />
+            </IconButton>
           </div>
         </div>
       </div>
 
-      {/* Suggested Assets Section */}
-      {!loading && assets.length > 0 && (
-        <div className="suggestedassets-wrapper p-2">
-          <div className="p-2 overflow-hidden rounded-lg" style={{ backgroundColor: 'rgba(0, 125, 240, 0.1)' }}>
-            <h3 className="text-xs font-medium text-[var(--text-primary)] mb-3 flex items-center gap-1">
-              <AISparkleIcon size={12} />
-              Suggested assets
-            </h3>
-            <div className="relative">
-              <div className="flex gap-4">
-                {[61, 62, 63, 64, 65, 66, 67].map((assetId) => {
-                  const asset = assets.find(a => a.id === assetId);
-                  if (!asset) return null;
-                  
-                  return (
-                    <div key={`suggested-${asset.id}`} className="flex-shrink-0 w-32">
-                      <AssetCardDesigner
-                        key={`suggested-${asset.id}`}
-                        id={asset.id}
-                        type={asset.type}
-                        icon={asset.icon}
-                        name=""
-                        onClick={() => handleAssetClick(asset.id)}
-                        isSelected={isReplaceMode ? false : selectedAssetId === asset.id}
-                        className="asset-card"
-                        assetUrl={asset.url}
-                        isDetailPanelOpen={!isReplaceMode && isDetailPanelOpen && selectedAssetId === asset.id}
-                        multiSelect={true}
-                        onOpenAssetDetailModal={handleOpenAssetDetailModal}
-                        fullAsset={asset}
-                      />
-                    </div>
-                  );
-                })}
+      {/* Main Content Area with Folder Structure and Assets */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Folder Structure Sidebar */}
+        <div className={`border-r border-[var(--border-default)] bg-[var(--background-primary)] overflow-y-auto transition-all duration-200 ${
+          isFolderPanelCollapsed ? 'w-0' : 'w-48'
+        }`}>
+          {/* Folder Content */}
+          {!isFolderPanelCollapsed && (
+            <div className="p-3">
+              <div className="space-y-1">
+                {folderStructure.map((folder, index) => renderFolderItem(folder, index === 0))}
               </div>
-              {/* Gradient fade effect to suggest more content */}
-              <div className="absolute top-0 right-[-8px] w-8 h-full bg-gradient-to-l from-[#25313D] to-transparent pointer-events-none z-10"></div>
+            </div>
+          )}
+        </div>
+
+                {/* Right Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden p-3">
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Suggested Assets Section */}
+            {!loading && assets.length > 0 && (
+              <div className="suggestedassets-wrapper p-1">
+                <div className="p-2 overflow-hidden rounded-lg" style={{ backgroundColor: 'rgba(0, 125, 240, 0.1)' }}>
+                  <h3 className="text-xs font-medium text-[var(--text-primary)] mb-2 flex items-center gap-1">
+                    <AISparkleIcon size={12} />
+                    Suggested assets
+                  </h3>
+                  <div className="relative">
+                    <div className="flex gap-4">
+                      {[61, 62, 63, 64, 65, 66, 67].map((assetId) => {
+                        const asset = assets.find(a => a.id === assetId);
+                        if (!asset) return null;
+                        
+                        return (
+                          <div key={`suggested-${asset.id}`} className="flex-shrink-0 w-24">
+                            <AssetCardDesigner
+                              key={`suggested-${asset.id}`}
+                              id={asset.id}
+                              type={asset.type}
+                              icon={asset.icon}
+                              name=""
+                              onClick={() => handleAssetClick(asset.id)}
+                              isSelected={isReplaceMode ? false : selectedAssetId === asset.id}
+                              className="asset-card"
+                              assetUrl={asset.url}
+                              isDetailPanelOpen={!isReplaceMode && isDetailPanelOpen && selectedAssetId === asset.id}
+                              multiSelect={true}
+                              onOpenAssetDetailModal={handleOpenAssetDetailModal}
+                              fullAsset={asset}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Gradient fade effect to suggest more content */}
+                    <div className="absolute top-0 right-[-8px] w-8 h-full bg-gradient-to-l from-[#25313D] to-transparent pointer-events-none z-10"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Spacing between sections */}
+            <div className="h-3" />
+
+            {/* Asset Display Area */}
+            <div 
+              className="p-2"
+              onClick={(event) => {
+                const target = event.target as HTMLElement;
+                const isAssetCardClick = target.closest('.asset-card');
+                if (!isAssetCardClick && selectedAssetId !== null) {
+                  onAssetSelect(null);
+                }
+              }}
+            >
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[var(--text-primary)]"></div>
+            </div>
+          ) : filteredAssets.length === 0 ? (
+            <p>No assets found.</p>
+          ) : viewMode === 'gallery' ? (
+            <div className="grid grid-cols-4 gap-4">
+              {filteredAssets.map((asset) => (
+                <AssetCardDesigner
+                  key={asset.id}
+                  id={asset.id}
+                  type={asset.type}
+                  icon={asset.icon}
+                  name={asset.name}
+                  onClick={() => handleAssetClick(asset.id)}
+                  isSelected={isReplaceMode ? false : selectedAssetId === asset.id}
+                  className="asset-card"
+                  assetUrl={asset.url}
+                  isDetailPanelOpen={!isReplaceMode && isDetailPanelOpen && selectedAssetId === asset.id}
+                  multiSelect={true}
+                  onOpenAssetDetailModal={handleOpenAssetDetailModal}
+                  fullAsset={asset}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredAssets.map((asset) => (
+                <div key={asset.id} className="flex items-center gap-4 p-4 border border-[var(--border-default)] rounded hover:bg-[var(--bg-hover)]">
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="w-12 h-12 bg-[var(--bg-secondary)] rounded flex items-center justify-center">
+                      {asset.icon === 'ImageIcon' ? <ImageIcon className="w-6 h-6" /> :
+                       asset.icon === 'VideoIcon' ? <VideoIcon className="w-6 h-6" /> :
+                       asset.icon === 'MainDocsIcon' ? <MainDocsIcon className="w-6 h-6" /> :
+                       <ImageIcon className="w-6 h-6" />}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-[var(--text-primary)]">{asset.name}</div>
+                      <div className="text-sm text-[var(--text-secondary)]">{asset.fileSize} • {asset.uploadedBy}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      {asset.tags?.slice(0, 2).map((tag: string, index: number) => (
+                        <div key={index} className="px-2 py-1 text-xs rounded bg-[var(--bg-secondary)] text-[var(--text-secondary)]">
+                          {tag}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-sm text-[var(--text-secondary)]">{asset.fileType}</div>
+                    <Button
+                      variant="ghost"
+                      size="compact"
+                      onClick={() => handleAssetClick(asset.id)}
+                    >
+                      Select
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
             </div>
           </div>
         </div>
-      )}
-
-      {/* Unified Asset Display */}
-      <div 
-        className="p-2 flex-grow overflow-y-auto"
-        onClick={(event) => {
-          const target = event.target as HTMLElement;
-          const isAssetCardClick = target.closest('.asset-card');
-          if (!isAssetCardClick && selectedAssetId !== null) {
-            onAssetSelect(null);
-          }
-        }}
-      >
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[var(--text-primary)]"></div>
-          </div>
-        ) : filteredAssets.length === 0 ? (
-          <p>No assets found.</p>
-        ) : viewMode === 'gallery' ? (
-          <div className="grid grid-cols-4 gap-4">
-            {filteredAssets.map((asset) => (
-              <AssetCardDesigner
-                key={asset.id}
-                id={asset.id}
-                type={asset.type}
-                icon={asset.icon}
-                name={asset.name}
-                onClick={() => handleAssetClick(asset.id)}
-                isSelected={isReplaceMode ? false : selectedAssetId === asset.id}
-                className="asset-card"
-                assetUrl={asset.url}
-                isDetailPanelOpen={!isReplaceMode && isDetailPanelOpen && selectedAssetId === asset.id}
-                multiSelect={true}
-                onOpenAssetDetailModal={handleOpenAssetDetailModal}
-                fullAsset={asset}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredAssets.map((asset) => (
-              <div key={asset.id} className="flex items-center gap-4 p-4 border border-[var(--border-default)] rounded hover:bg-[var(--bg-hover)]">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className="w-12 h-12 bg-[var(--bg-secondary)] rounded flex items-center justify-center">
-                    {asset.icon === 'ImageIcon' ? <ImageIcon className="w-6 h-6" /> :
-                     asset.icon === 'VideoIcon' ? <VideoIcon className="w-6 h-6" /> :
-                     asset.icon === 'MainDocsIcon' ? <MainDocsIcon className="w-6 h-6" /> :
-                     <ImageIcon className="w-6 h-6" />}
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium text-[var(--text-primary)]">{asset.name}</div>
-                    <div className="text-sm text-[var(--text-secondary)]">{asset.fileSize} • {asset.uploadedBy}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    {asset.tags?.slice(0, 2).map((tag: string, index: number) => (
-                      <div key={index} className="px-2 py-1 text-xs rounded bg-[var(--bg-secondary)] text-[var(--text-secondary)]">
-                        {tag}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-sm text-[var(--text-secondary)]">{asset.fileType}</div>
-                  <Button
-                    variant="ghost"
-                    size="compact"
-                    onClick={() => handleAssetClick(asset.id)}
-                  >
-                    Select
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Removed Asset Detail Modal as it's replaced by a side panel */}

@@ -107,13 +107,13 @@ export default function AssetsOverviewPage() {
         </div>
       </div>
 
-      {/* Projects Section */}
+      {/* Collections Section */}
       <div className="pt-4">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Projects</h3>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)]">Collections</h3>
           <button
             className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-            onClick={() => console.log('View all projects')}
+            onClick={() => router.push('/dashboard/assets/collections')}
           >
             View all
           </button>
@@ -125,7 +125,7 @@ export default function AssetsOverviewPage() {
               site={project.site}
               assetCount={project.assetCount}
               previewImages={project.previewImages}
-              onClick={() => router.push(`/dashboard/assets/all-assets?site=${project.site.id}`)}
+              onClick={() => router.push(`/dashboard/assets/collection/${project.site.id}`)}
             />
           ))}
         </div>

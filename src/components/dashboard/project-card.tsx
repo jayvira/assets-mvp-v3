@@ -29,14 +29,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 }) => {
   return (
     <div 
-      className={`bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 flex flex-col h-full ${className}`}
+      className={`bg-white rounded-lg cursor-pointer hover:bg-gray-50 transition-all duration-200 flex flex-col h-[240px] ${className}`}
       onClick={onClick}
     >
       {/* Preview Grid */}
-      <div className="flex-1 overflow-hidden">
-        <div className="grid grid-cols-3 gap-1 h-full p-1">
+      <div className="flex-1 overflow-hidden rounded-lg">
+        <div className="flex gap-1 h-full">
           {/* Large left image */}
-          <div className="col-span-2 rounded overflow-hidden bg-gray-200">
+          <div className="flex-[2] overflow-hidden bg-gray-200">
             <img 
               src={previewImages[0]} 
               alt={`${site.name} preview`}
@@ -49,8 +49,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             />
           </div>
           {/* Two smaller right images */}
-          <div className="col-span-1 grid grid-rows-2 gap-1">
-            <div className="rounded overflow-hidden bg-gray-200">
+          <div className="flex-1 flex flex-col gap-1">
+            <div className="flex-1 overflow-hidden bg-gray-200">
               <img 
                 src={previewImages[1]} 
                 alt={`${site.name} preview`}
@@ -62,7 +62,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                 }}
               />
             </div>
-            <div className="rounded overflow-hidden bg-gray-200">
+            <div className="flex-1 overflow-hidden bg-gray-200">
               <img 
                 src={previewImages[2]} 
                 alt={`${site.name} preview`}
@@ -78,9 +78,9 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
       </div>
       {/* Text Information */}
-      <div className="space-y-2 mt-4">
-        <h4 className="font-semibold text-gray-900 text-base leading-tight">{site.name}</h4>
-        <p className="text-sm text-gray-600 leading-relaxed">{assetCount} assets · Updated {site.lastModified}</p>
+      <div className="p-2 mt-2 space-y-1">
+        <h4 className="title-text-bold">{site.name}</h4>
+        <p className="body-text text-[var(--text-secondary)]">{assetCount} assets · Updated {site.lastModified}</p>
       </div>
     </div>
   );
