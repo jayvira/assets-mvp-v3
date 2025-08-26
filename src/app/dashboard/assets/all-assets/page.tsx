@@ -13,8 +13,8 @@ import { AddIcon } from '@/icons/AddIcon';
 import { SiteIcon } from '@/icons/SiteIcon';
 import { TagPill } from '@/components/TagPill';
 import { CloseDefaultIcon, DownloadIcon, ArchiveIcon, ArrowDownIcon, SearchDefaultIcon } from '@/icons';
-import { getAllSites, getSiteNameById } from '@/config/sites';
-import { getAllAssets } from '@/lib/supabase';
+import { getAllSites, getSiteNameById, SITES } from '@/config/sites';
+import { getAllAssets, getCachedAssetCountsForSites } from '@/lib/supabase';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -22,6 +22,8 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuItem,
 } from "@/components/spring-ui/dropdown-menu";
+import { Modal, ModalContent } from '@/components/spring-ui/modal';
+import { Checkbox } from '@/components/spring-ui/checkbox';
 import { SegmentedControl, SegmentedControlItem } from "@/components/spring-ui/segmented-control";
 import { GridIcon, ListIcon } from "@/icons";
 import { ChevronSmallDownIcon } from '@/icons/ChevronSmallDownIcon';
@@ -45,6 +47,12 @@ const parseFileSizeToBytes = (fileSize: string): number => {
 };
 
 // Component that uses useSearchParams
+interface Collection {
+  id: string;
+  name: string;
+  itemCount: number;
+}
+
 function AllAssetsContent() {
   const searchParams = useSearchParams();
   const [selectedAssetIds, setSelectedAssetIds] = useState<number[]>([]);
@@ -67,7 +75,37 @@ function AllAssetsContent() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showUploadBanner, setShowUploadBanner] = useState(false);
   const [uploadingFileName, setUploadingFileName] = useState('');
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get collections data from sites
+  const [collections, setCollections] = useState<Collection[]>([]);
+
+  // Fetch collections data
+  useEffect(() => {
+    const fetchCollections = async () => {
+      try {
+        // Get asset counts for all sites
+        const assetCounts = await getCachedAssetCountsForSites(SITES.map(site => site.id));
+        
+        // Map sites to collections
+        const collectionsData = SITES.map(site => ({
+          id: site.id,
+          name: site.name,
+          itemCount: assetCounts[site.id] || 0
+        }));
+        
+        setCollections(collectionsData);
+      } catch (error) {
+        console.error('Error fetching collections:', error);
+        setCollections([]);
+      }
+    };
+
+    fetchCollections();
+  }, []);
 
   // Handle URL parameter for site filter
   useEffect(() => {
@@ -121,69 +159,79 @@ function AllAssetsContent() {
     const files = event.target.files;
     if (files) {
       console.log('Files selected:', files);
-      
-      // Show upload banner and start progress simulation
-      setShowUploadBanner(true);
-      setUploadProgress(0);
-      setUploadingFileName(files.length === 1 ? files[0].name : `${files.length} files`);
-      
-      // Simulate upload progress
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += Math.random() * 15 + 5; // Random progress increment
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(progressInterval);
-          
-          // Hide banner after a short delay
-          setTimeout(() => {
-            setShowUploadBanner(false);
-            setUploadProgress(0);
-          }, 1000);
-        }
-        setUploadProgress(Math.min(progress, 100));
-      }, 200);
-      
-      // Convert FileList to Array and process each file
-      Array.from(files).forEach((file) => {
-        // Generate tags from filename
-        const filename = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
-        const generatedTags = filename
-          .toLowerCase()
-          .split(/[-_\s]+/) // Split by hyphens, underscores, or spaces
-          .filter(word => word.length > 2) // Only include words longer than 2 characters
-          .slice(0, 3); // Limit to first 3 tags
-        
-        // Create a mock asset object for the uploaded file
-        const newAsset = {
-          id: Date.now() + Math.random(), // Generate unique ID
-          type: file.type.split('/')[1]?.toUpperCase() || 'UNKNOWN',
-          icon: "ImageIcon",
-          name: filename,
-          url: URL.createObjectURL(file), // Create blob URL for preview
-          dateModified: new Date().toISOString(),
-          uploadedDate: new Date().toISOString(),
-          fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-          uploadedBy: "Current User",
-          tags: generatedTags,
-          fileType: "Images",
-          status: "Approved",
-          altText: "",
-          version: "V1",
-          sites: [],
-          width: 0,
-          height: 0,
-        };
-        
-        // Add the new asset to the assets array using setState
-        setAssets(prev => [newAsset, ...prev]);
-      });
-      
-      // Clear the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setPendingFiles(files);
+      setShowCollectionModal(true);
     }
+  };
+
+  const handleUploadWithCollections = () => {
+    if (!pendingFiles) return;
+    
+    // Show upload banner and start progress simulation
+    setShowUploadBanner(true);
+    setUploadProgress(0);
+    setUploadingFileName(pendingFiles.length === 1 ? pendingFiles[0].name : `${pendingFiles.length} files`);
+    
+    // Simulate upload progress
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += Math.random() * 15 + 5; // Random progress increment
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(progressInterval);
+        
+        // Hide banner after a short delay
+        setTimeout(() => {
+          setShowUploadBanner(false);
+          setUploadProgress(0);
+        }, 1000);
+      }
+      setUploadProgress(Math.min(progress, 100));
+    }, 200);
+    
+    // Convert FileList to Array and process each file
+    Array.from(pendingFiles).forEach((file) => {
+      // Generate tags from filename
+      const filename = file.name.replace(/\.[^/.]+$/, ""); // Remove extension
+      const generatedTags = filename
+        .toLowerCase()
+        .split(/[-_\s]+/) // Split by hyphens, underscores, or spaces
+        .filter(word => word.length > 2) // Only include words longer than 2 characters
+        .slice(0, 3); // Limit to first 3 tags
+      
+      // Create a mock asset object for the uploaded file
+      const newAsset = {
+        id: Date.now() + Math.random(), // Generate unique ID
+        type: file.type.split('/')[1]?.toUpperCase() || 'UNKNOWN',
+        icon: "ImageIcon",
+        name: filename,
+        url: URL.createObjectURL(file), // Create blob URL for preview
+        dateModified: new Date().toISOString(),
+        uploadedDate: new Date().toISOString(),
+        fileSize: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+        uploadedBy: "Current User",
+        tags: generatedTags,
+        fileType: "Images",
+        status: "Approved",
+        altText: "",
+        version: "V1",
+        sites: [],
+        collections: selectedCollections, // Add selected collections to the asset
+        width: 0,
+        height: 0,
+      };
+      
+      // Add the new asset to the assets array using setState
+      setAssets(prev => [newAsset, ...prev]);
+    });
+    
+    // Clear the file input and reset collections
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setPendingFiles(null);
+    setSelectedCollections([]);
+    setShowCollectionModal(false);
   };
 
   const handleArchiveSelected = () => {
@@ -270,8 +318,6 @@ function AllAssetsContent() {
               style={{ display: 'none' }}
               multiple
               accept="*/*"
-              mozdirectory
-              webkitdirectory
               onChange={handleFileChange}
             />
             <Button variant="primary" onClick={() => {
@@ -551,6 +597,94 @@ function AllAssetsContent() {
         />
       )}
       
+      {/* Collection Selection Modal */}
+      <Modal open={showCollectionModal}>
+        <ModalContent
+          title="Upload files to..."
+          primaryAction={{
+            label: `Upload ${pendingFiles?.length} file${pendingFiles?.length === 1 ? '' : 's'}`,
+            onClick: handleUploadWithCollections,
+            variant: "primary"
+          }}
+          secondaryAction={{
+            label: "Cancel",
+            onClick: () => {
+              setPendingFiles(null);
+              setSelectedCollections([]);
+              setShowCollectionModal(false);
+            }
+          }}
+        >
+          <div className="space-y-4">
+            <p className="text-[var(--text-secondary)]">
+              Select one or more collections to add your assets to. You can also skip this step.
+            </p>
+            <div className="border border-[var(--border-default)] rounded-[4px] max-h-[200px] overflow-y-auto">
+              <div className="space-y-3 p-3">
+                {/* All assets option */}
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="all-assets"
+                    checked={selectedCollections.length === 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCollections([]);
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="all-assets"
+                    className="flex items-center justify-between flex-1 cursor-pointer"
+                  >
+                    <span className="font-medium">No collection</span>
+                  </label>
+                </div>
+
+                {/* Divider */}
+                <div className="h-[1px] bg-[var(--border-default)]"></div>
+
+                {/* Collections Header */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-[var(--text-secondary)]">Collections</span>
+                  <IconButton
+                    variant="ghost"
+                    size="compact"
+                    onClick={() => console.log('Add collection')}
+                    aria-label="Add collection"
+                  >
+                    <AddIcon size={16} />
+                  </IconButton>
+                </div>
+
+                {/* Collections */}
+                {collections.map((collection) => (
+                  <div key={collection.id} className="flex items-center gap-3">
+                    <Checkbox
+                      id={`collection-${collection.id}`}
+                      checked={selectedCollections.includes(collection.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCollections(prev => [...prev, collection.id]);
+                        } else {
+                          setSelectedCollections(prev => prev.filter(id => id !== collection.id));
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`collection-${collection.id}`}
+                      className="flex items-center justify-between flex-1 cursor-pointer"
+                    >
+                      <span>{collection.name}</span>
+                      <span className="text-sm text-[var(--text-secondary)]">{collection.itemCount} items</span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ModalContent>
+      </Modal>
+
       {/* Upload Progress Banner */}
       <UploadProgressBanner
         isVisible={showUploadBanner}
