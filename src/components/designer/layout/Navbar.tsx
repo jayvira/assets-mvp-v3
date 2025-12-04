@@ -44,6 +44,7 @@ import {
 } from "@/icons"
 import { Button } from "@/components/spring-ui/button"
 import { usePages } from "@/context/PagesContext"
+import { useLocale } from "@/context/LocaleContext"
 
 // Type for navigation items
 interface NavItem {
@@ -60,6 +61,7 @@ export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoHovered, setLogoHovered] = useState(false);
   const router = useRouter();
+  const { currentLocale, locales, setCurrentLocale } = useLocale();
 
   const toggleTheme = () => {
     const newMode = theme.mode === "light" ? "dark" : "light";
@@ -266,10 +268,38 @@ export function Navbar() {
               <span>Optimize</span>
             </Button>
             
-            <Button variant="ghost" size="comfortable" className="h-6 ml-1">
-              <LocalizationIcon size={16} className="opacity-70" />
-              <span>English</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="comfortable" className="h-6 ml-1">
+                  <LocalizationIcon size={16} className="opacity-70" />
+                  <span>{currentLocale.displayName}</span>
+                  <ChevronSmallDownIcon className="opacity-50 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[200px]">
+                {locales.map((locale) => (
+                  <DropdownMenuItem
+                    key={locale.id}
+                    onClick={() => setCurrentLocale(locale)}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center">
+                      {currentLocale.id === locale.id ? (
+                        <Check className="w-4 h-4 mr-2" />
+                      ) : (
+                        <div className="w-4 h-4 mr-2" />
+                      )}
+                      <span>{locale.displayName}</span>
+                    </div>
+                    {locale.isPrimary && (
+                      <span className="text-xs text-[var(--text-secondary)]">
+                        Primary
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             <div className="mx-2 h-4 border-r border-[var(--border-default)]"></div>
             

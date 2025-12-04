@@ -16,6 +16,7 @@ import {
   AssetManagerIcon,
   ChevronSmallRightIcon,
   SettingsIcon,
+  StyleManager24Icon,
 } from "@/icons";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from 'next/navigation';
@@ -28,8 +29,10 @@ const mainNavItems = [
       { name: "All assets", id: "assets-all", href: "/dashboard/assets/all-assets" },
       { name: "Collections", id: "assets-collections", href: "/dashboard/assets/collections" },
       { name: "Archived", id: "assets-archived", href: "/dashboard/assets/archived" },
+      { name: "Brand Assistant", id: "assets-brand-assistant", href: "/dashboard/assets/brand-assistant" },
     ]
   },
+  { name: "Brand Guidelines", id: "brand-guidelines", icon: StyleManager24Icon, href: "/dashboard/assets/guidelines" },
   { name: "Apps & integrations", id: "apps-integrations", icon: AppsIcon, href: "/dashboard/apps" },
   { name: "Libraries & templates", id: "libraries-templates", icon: TemplatesIcon, href: "/dashboard/libraries" },
   { name: "Settings", id: "settings", icon: SettingsIcon, href: "/dashboard/settings",
@@ -91,6 +94,7 @@ export function SitesSidebar({ selectedSection = "all-sites", onSectionChange }:
       'assets-all': 18,        // All assets
       'assets-collections': 57, // Collections  
       'assets-archived': 92,   // Archived
+      'assets-brand-assistant': 127, // Brand Assistant
     },
     settings: {
       'settings-members': 18,  // Members
@@ -115,6 +119,9 @@ export function SitesSidebar({ selectedSection = "all-sites", onSectionChange }:
 
   // Determine active state based on current pathname
   const getActiveFromPathname = (pathname: string) => {
+    if (pathname === '/dashboard/assets/guidelines') {
+      return 'brand-guidelines';
+    }
     if (pathname.startsWith('/dashboard/assets')) {
       return 'assets';
     }

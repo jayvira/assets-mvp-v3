@@ -35,11 +35,17 @@ src/
    ```bash
    npm install
    ```
-3. Run the development server:
+3. Set up environment variables:
+   - Create a `.env.local` file in the root directory
+   - Add your OpenAI API key (required for Brand Assistant compliance checks):
+     ```
+     OPENAI_API_KEY=your_openai_api_key_here
+     ```
+4. Run the development server:
    ```bash
    npm run dev
    ```
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## Available Scripts
 

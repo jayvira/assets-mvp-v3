@@ -28,6 +28,8 @@ import NavigatorPanel from './panels/leftpanel/NavigatorPanel';
 import AssetsPanel from './panels/leftpanel/AssetsPanel';
 import AssetDetailPanel from './panels/leftpanel/AssetDetailPanel';
 import AssetDetailModalDesigner from './panels/leftpanel/AssetDetailModalDesigner';
+import SettingsPanel from './panels/leftpanel/SettingsPanel';
+import LocalizationPanel from './panels/leftpanel/LocalizationPanel';
 
 // Define panel types
 type PanelType = 
@@ -40,6 +42,7 @@ type PanelType =
   | 'assets' 
   | 'apps' 
   | 'activityLog' 
+  | 'settings'
   | null;
 
 // Define AssetType for consistency (should match AssetCardProps)
@@ -103,15 +106,18 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }
   const { openAssetsPanelNormal } = useSidebarPanel(); // Get the normal mode function
   const [assetDetailModalOpen, setAssetDetailModalOpen] = useState(false);
   const [selectedAssetForModal, setSelectedAssetForModal] = useState<any>(null);
+  const [showLocalization, setShowLocalization] = useState(false);
 
   // Function to toggle panels
   const togglePanel = (panel: PanelType) => {
     if (activePanel === panel) {
       setActivePanel(null);
       setSelectedAssetForDetail(null); // Close asset detail when main panel closes
+      setShowLocalization(false); // Reset nested panel state
     } else {
       setActivePanel(panel);
       setSelectedAssetForDetail(null); // Clear asset detail when switching panels
+      setShowLocalization(false); // Reset nested panel state when switching
     }
   };
 
@@ -119,6 +125,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }
   const closePanel = () => {
     setActivePanel(null);
     setSelectedAssetForDetail(null);
+    setShowLocalization(false);
   };
 
   // Handle asset selection from AssetsPanel
@@ -291,9 +298,12 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }
         
         {/* Bottom section */}
         <Tooltip text="Settings">
-          <div className="w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group">
+          <div 
+            className={`w-[35px] h-[35px] flex items-center justify-center cursor-pointer hover:bg-[var(--bg-tertiary)] group ${activePanel === 'settings' ? 'bg-[var(--bg-tertiary)]' : ''}`}
+            onClick={() => togglePanel('settings')}
+          >
             <ToolbarSettings24Icon 
-              style={{ color: 'var(--text-secondary)' }} 
+              style={getIconStyle(activePanel === 'settings')} 
               className="group-hover:!text-[var(--text-primary)] transition-colors duration-150" 
             />
           </div>
@@ -368,6 +378,34 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({ activePanel, setActivePanel }
       
       <Panel title="Apps" isOpen={activePanel === 'apps'} onClose={closePanel} />
       <Panel title="Activity Log" isOpen={activePanel === 'activityLog'} onClose={closePanel} />
+      
+      {/* Settings Panel - Always at left-[35px] with width 248px */}
+      <Panel 
+        title="Settings" 
+        isOpen={activePanel === 'settings'} 
+        onClose={closePanel}
+        panelWidth="248px"
+        leftOffset="35px"
+      >
+        <SettingsPanel
+          onNavigateToLocalization={() => setShowLocalization(true)}
+          showLocalization={showLocalization}
+          onBack={() => setShowLocalization(false)}
+        />
+      </Panel>
+      
+      {/* Localization Panel - Extends Settings panel when showLocalization is true */}
+      {activePanel === 'settings' && showLocalization && (
+        <Panel 
+          title="Localization" 
+          isOpen={true} 
+          onClose={() => setShowLocalization(false)}
+          panelWidth="520px"
+          leftOffset="283px"
+        >
+          <LocalizationPanel onBack={() => setShowLocalization(false)} />
+        </Panel>
+      )}
       
       {/* Asset Detail Modal - Rendered outside Panel structure */}
       {assetDetailModalOpen && selectedAssetForModal && (

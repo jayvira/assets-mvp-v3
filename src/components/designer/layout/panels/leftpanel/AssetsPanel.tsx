@@ -18,6 +18,7 @@ import AssetCardDesigner from './AssetCardDesigner';
 import PanelHeader from '../PanelHeader';
 import { getAssetsForSite, Asset, supabase } from '@/lib/supabase';
 import { useSidebarPanel } from '../../LeftSidebar';
+import { useLocale } from '@/context/LocaleContext';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -92,6 +93,7 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { onAssetSelected, isReplaceMode } = useSidebarPanel(); // Get the asset selection handler and replace mode from context
+  const { currentLocale } = useLocale(); // Get current locale for locale-aware suggestions
   const [objectUrls, setObjectUrls] = useState<string[]>([]); // Track object URLs for cleanup
   
   // Filter states
@@ -726,7 +728,7 @@ const AssetsPanel: React.FC<AssetsPanelProps> = ({ onAssetSelect, selectedAssetI
                 <div className="p-2 overflow-hidden rounded-lg" style={{ backgroundColor: 'rgba(0, 125, 240, 0.1)' }}>
                   <h3 className="text-xs font-medium text-[var(--text-primary)] mb-2 flex items-center gap-1">
                     <AISparkleIcon size={12} />
-                    Suggested assets
+                    {currentLocale.isPrimary ? 'Suggested assets' : 'Suggested assets for this locale'}
                   </h3>
                   <div className="relative">
                     <div className="flex gap-4">

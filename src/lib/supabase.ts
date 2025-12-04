@@ -96,6 +96,48 @@ export const getAssetById = async (id: number): Promise<Asset | null> => {
   } : null
 }
 
+export const getAssetByUrl = async (url: string): Promise<Asset | null> => {
+  // Try exact match first
+  let { data, error } = await supabase
+    .from('Assets')
+    .select('*')
+    .eq('url', url)
+    .limit(1)
+    .single()
+
+  // If exact match fails, try partial match (in case of URL encoding differences)
+  if (error || !data) {
+    // Extract the filename from the URL for partial matching
+    const urlParts = url.split('/')
+    const filename = urlParts[urlParts.length - 1]
+    
+    if (filename) {
+      const { data: partialData, error: partialError } = await supabase
+        .from('Assets')
+        .select('*')
+        .like('url', `%${filename}%`)
+        .limit(1)
+        .maybeSingle()
+      
+      if (!partialError && partialData) {
+        data = partialData
+        error = null
+      }
+    }
+  }
+
+  if (error || !data) {
+    console.error('Error fetching asset by URL:', error)
+    return null
+  }
+
+  // Transform tags from string to array
+  return {
+    ...data,
+    tags: data.tags ? data.tags.split(', ') : []
+  }
+}
+
 // Helper function to get asset count for a site
 export const getAssetCountForSite = async (siteId: string): Promise<number> => {
   const assets = await getAssetsForSite(siteId);
@@ -233,5 +275,132 @@ export const getCachedPreviewImagesForSites = async (siteIds: string[]): Promise
   cache.set(cacheKey, { data, timestamp: Date.now() });
   return data;
 };
+
+// Voice & Tone Document interface
+// NOTE: This interface is now used for local state documents stored as blob URLs
+// The id is generated client-side (Date.now() + Math.random())
+// The created_at is an ISO string from new Date().toISOString()
+export interface VoiceToneDocument {
+  id: number; // Client-side generated ID
+  document_name: string;
+  file_url: string; // Blob URL (URL.createObjectURL)
+  file_size: string;
+  extracted_text: string; // Text extracted from .docx files
+  created_at: string; // ISO string timestamp
+  uploaded_by: string;
+}
+
+// Upload voice & tone document to Supabase Storage
+// NOTE: This function is no longer used - documents are now stored as blob URLs in local state
+// Kept for reference in case we need to restore Storage functionality in the future
+/*
+export const uploadVoiceToneDocument = async (file: File): Promise<{ url: string; path: string }> => {
+  const timestamp = Date.now();
+  const fileName = `${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+  const filePath = `voice-tone-documents/${fileName}`;
+
+  const { data, error } = await supabase.storage
+    .from('voice-tone-documents')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (error) {
+    console.error('Error uploading file:', error);
+    console.error('Error details:', {
+      message: error.message,
+      statusCode: (error as any).statusCode,
+      error: JSON.stringify(error, null, 2)
+    });
+    
+    // Check if bucket doesn't exist
+    if (error.message?.includes('Bucket not found') || error.message?.includes('not found') || (error as any).statusCode === 404) {
+      throw new Error('Storage bucket "voice-tone-documents" does not exist. Please create it in Supabase Storage first.');
+    }
+    
+    throw error;
+  }
+
+  // Get public URL
+  const { data: urlData } = supabase.storage
+    .from('voice-tone-documents')
+    .getPublicUrl(filePath);
+
+  return {
+    url: urlData.publicUrl,
+    path: filePath
+  };
+};
+*/
+
+// Extract text from .docx file using mammoth
+export const extractTextFromDocx = async (file: File): Promise<string> => {
+  try {
+    // Dynamically import mammoth to avoid SSR issues
+    const mammoth = await import('mammoth');
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    
+    return result.value || '';
+  } catch (error) {
+    console.error('Error extracting text from document:', error);
+    // Return empty string if extraction fails - file will still be saved
+    return '';
+  }
+};
+
+// Save voice & tone document metadata to database
+// NOTE: This function is no longer used - documents are now stored in local state only
+// Kept for reference in case we need to restore database persistence in the future
+/*
+export const saveVoiceToneDocumentMetadata = async (data: {
+  document_name: string;
+  file_url: string;
+  file_size: string;
+  extracted_text: string;
+  uploaded_by: string;
+}): Promise<VoiceToneDocument> => {
+  const { data: insertedData, error } = await supabase
+    .from('voice_tone_documents')
+    .insert({
+      document_name: data.document_name,
+      file_url: data.file_url,
+      file_size: data.file_size,
+      extracted_text: data.extracted_text,
+      uploaded_by: data.uploaded_by,
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error saving document metadata:', error);
+    throw error;
+  }
+
+  return insertedData;
+};
+*/
+
+// Get all voice & tone documents
+// NOTE: This function is no longer used - documents are now stored in local state only
+// Kept for reference in case we need to restore database persistence in the future
+/*
+export const getVoiceToneDocuments = async (): Promise<VoiceToneDocument[]> => {
+  const { data, error } = await supabase
+    .from('voice_tone_documents')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching voice & tone documents:', error);
+    return [];
+  }
+
+  return data || [];
+};
+*/
 
  

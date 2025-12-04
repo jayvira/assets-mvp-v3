@@ -10,9 +10,10 @@ interface PanelProps {
   onClose?: () => void;
   panelWidth?: string;
   hideHeader?: boolean;
+  leftOffset?: string;
 }
 
-const Panel: React.FC<PanelProps> = ({ title, isOpen, children, onClose, panelWidth = '248px', hideHeader = false }) => {
+const Panel: React.FC<PanelProps> = ({ title, isOpen, children, onClose, panelWidth = '248px', hideHeader = false, leftOffset = '35px' }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   
   // Remove the click-outside behavior entirely
@@ -23,8 +24,9 @@ const Panel: React.FC<PanelProps> = ({ title, isOpen, children, onClose, panelWi
   return (
     <div 
       ref={panelRef}
-      className="fixed left-[35px] top-[35px] h-[calc(100vh-35px)] bg-[var(--bg-primary)] border-r border-[var(--border-default)] z-10 overflow-hidden flex flex-col"
+      className="fixed top-[35px] h-[calc(100vh-35px)] bg-[var(--bg-primary)] border-r border-[var(--border-default)] z-10 overflow-hidden flex flex-col"
       style={{
+        left: leftOffset,
         width: panelWidth,
         boxShadow: '0px 4px 8px 0px rgba(0, 0, 0, 0.1)',
         animation: 'panelSlideIn 0.15s ease-out forwards'

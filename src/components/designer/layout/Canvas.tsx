@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import { usePages } from '@/context/PagesContext';
 import { useApp } from '@/context/AppContext';
+import { useLocale } from '@/context/LocaleContext';
 import { getAssetById, Asset } from '@/lib/supabase';
+import { getHomepageImageForLocale } from '@/config/locale-assets';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/spring-ui/popover';
 import { Button } from '@/components/spring-ui/button';
 import { Input } from '@/components/spring-ui/input';
@@ -30,6 +32,7 @@ interface CanvasProps {
 const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) => {
   const { selectedPage } = usePages();
   const { openCMSItemDetails } = useApp();
+  const { currentLocale } = useLocale();
   const [selectedHeroImage, setSelectedHeroImage] = React.useState(false);
   const [popoverOpen, setPopoverOpen] = React.useState(false);
   const [aiEditPopoverOpen, setAiEditPopoverOpen] = useState(false);
@@ -235,11 +238,14 @@ const Canvas: React.FC<CanvasProps> = ({ selectedHeroAsset, onAssetSelected }) =
   const renderPageContent = () => {
     switch (selectedPage) {
       case '/':
+        // Get locale-specific homepage image from config
+        const homepageImage = getHomepageImageForLocale(currentLocale.code);
+        
         return (
           <div className="w-full h-full relative">
             <img 
-              src="https://cdn.prod.website-files.com/687d379371b4f02fa4f58460/687dbb91da28da0f49ea92ed_Screenshot%202025-07-20%20at%204.27.59%E2%80%AFPM.png"
-              alt="Forme Homepage"
+              src={homepageImage}
+              alt={currentLocale.code === 'de-DE' ? "Forme Homepage (Deutsch)" : "Forme Homepage"}
               className="w-full object-cover object-top"
               onError={(e) => {
                 console.error('Image failed to load:', e);
