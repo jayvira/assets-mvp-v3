@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { buildBrandCompliancePrompt } from '@/lib/prompts/brand-compliance-prompt';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -19,13 +14,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if API key is configured
+    // Check if API key is configured and create client inside handler
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
         { error: 'OPENAI_API_KEY is not configured' },
         { status: 500 }
       );
     }
+
+    // Create OpenAI client inside the handler (not at module level)
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // Validate required fields
     if (!body.sampleCopy || !body.brandGuidelines) {
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     if (shouldStream) {
       // Streaming response
-      const completion = await openai.chat.completions.create({
+      const completion = await client.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           {
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Non-streaming response (for testing)
-      const completion = await openai.chat.completions.create({
+      const completion = await client.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           {
